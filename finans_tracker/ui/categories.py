@@ -1,4 +1,4 @@
-"""Kategorivy med CRUD och färgkodning."""
+"""Categories view with CRUD and color coding."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ PRESET_COLORS = [
 
 
 class ColorPicker(ctk.CTkFrame):
-    """Enkel färgväljare med fördefinierade färger."""
+    """Simple color picker with predefined colors."""
 
     def __init__(
         self,
@@ -51,7 +51,7 @@ class ColorPicker(ctk.CTkFrame):
         self._select(initial_color)
 
     def _select(self, color: str) -> None:
-        """Markerar vald färg."""
+        """Highlights the selected color."""
         self._selected = color
         for btn in self._buttons:
             btn_color = btn.cget("fg_color")
@@ -62,12 +62,12 @@ class ColorPicker(ctk.CTkFrame):
 
     @property
     def selected_color(self) -> str:
-        """Returnerar vald färg."""
+        """Returns the selected color."""
         return self._selected
 
 
 class CategoryDialog(ctk.CTkToplevel):
-    """Dialog för att lägga till/redigera kategorier."""
+    """Dialog for adding/editing categories."""
 
     def __init__(
         self,
@@ -85,7 +85,7 @@ class CategoryDialog(ctk.CTkToplevel):
         self.category = category
 
         is_edit = category is not None
-        self.title("Redigera kategori" if is_edit else "Ny kategori")
+        self.title("Edit category" if is_edit else "New category")
         self.geometry("440x480")
         self.resizable(False, False)
         self.transient(master)
@@ -95,17 +95,17 @@ class CategoryDialog(ctk.CTkToplevel):
         form.pack(fill="both", expand=True, padx=24, pady=24)
 
         ctk.CTkLabel(
-            form, text="Namn", font=ctk.CTkFont(size=13, weight="bold"),
+            form, text="Name", font=ctk.CTkFont(size=13, weight="bold"),
             text_color=colors["text_secondary"],
         ).pack(anchor="w", pady=(0, 4))
 
-        self._name_entry = ctk.CTkEntry(form, height=40, placeholder_text="Kategorinamn")
+        self._name_entry = ctk.CTkEntry(form, height=40, placeholder_text="Category name")
         self._name_entry.pack(fill="x", pady=(0, 12))
         if category:
             self._name_entry.insert(0, category.name)
 
         ctk.CTkLabel(
-            form, text="Typ", font=ctk.CTkFont(size=13, weight="bold"),
+            form, text="Type", font=ctk.CTkFont(size=13, weight="bold"),
             text_color=colors["text_secondary"],
         ).pack(anchor="w", pady=(0, 4))
 
@@ -115,14 +115,14 @@ class CategoryDialog(ctk.CTkToplevel):
         type_frame = ctk.CTkFrame(form, fg_color="transparent")
         type_frame.pack(fill="x", pady=(0, 12))
 
-        for label, value in [("Utgift", "expense"), ("Inkomst", "income"), ("Båda", "both")]:
+        for label, value in [("Expense", "expense"), ("Income", "income"), ("Both", "both")]:
             ctk.CTkRadioButton(
                 type_frame, text=label, variable=self._type_var, value=value,
                 text_color=colors["text_primary"],
             ).pack(side="left", padx=(0, 12))
 
         ctk.CTkLabel(
-            form, text="Färg", font=ctk.CTkFont(size=13, weight="bold"),
+            form, text="Color", font=ctk.CTkFont(size=13, weight="bold"),
             text_color=colors["text_secondary"],
         ).pack(anchor="w", pady=(0, 4))
 
@@ -136,14 +136,14 @@ class CategoryDialog(ctk.CTkToplevel):
         btn_frame.pack(fill="x")
 
         ctk.CTkButton(
-            btn_frame, text="Avbryt", width=100, height=40,
+            btn_frame, text="Cancel", width=100, height=40,
             fg_color="transparent", border_width=1, border_color=colors["border"],
             text_color=colors["text_primary"], hover_color=colors["sidebar_hover"],
             command=self.destroy,
         ).pack(side="left")
 
         ctk.CTkButton(
-            btn_frame, text="Spara", width=120, height=40,
+            btn_frame, text="Save", width=120, height=40,
             fg_color=colors["accent"], hover_color=colors["accent_hover"],
             command=self._save,
         ).pack(side="right")
@@ -154,10 +154,10 @@ class CategoryDialog(ctk.CTkToplevel):
         self.geometry(f"+{x}+{y}")
 
     def _save(self) -> None:
-        """Validerar och sparar kategorin."""
+        """Validates and saves the category."""
         name = self._name_entry.get().strip()
         if not name:
-            show_error(self, self.theme, "Namn får inte vara tomt.")
+            show_error(self, self.theme, "Name cannot be empty.")
             return
 
         cat = Category(
@@ -179,7 +179,7 @@ class CategoryDialog(ctk.CTkToplevel):
 
 
 class CategoriesView(ctk.CTkFrame):
-    """Hanterar visning och hantering av kategorier."""
+    """Handles displaying and managing categories."""
 
     def __init__(
         self,
@@ -200,18 +200,18 @@ class CategoriesView(ctk.CTkFrame):
         self.refresh()
 
     def _build_ui(self, colors: dict[str, str]) -> None:
-        """Bygger kategorilayout."""
+        """Builds the categories layout."""
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=24, pady=(24, 16))
 
         ctk.CTkLabel(
-            header, text="Kategorier",
+            header, text="Categories",
             font=ctk.CTkFont(size=28, weight="bold"),
             text_color=colors["text_primary"],
         ).pack(side="left")
 
         ctk.CTkButton(
-            header, text="+ Ny kategori", height=40,
+            header, text="+ New category", height=40,
             fg_color=colors["accent"], hover_color=colors["accent_hover"],
             command=self._open_add_dialog,
         ).pack(side="right")
@@ -223,7 +223,7 @@ class CategoriesView(ctk.CTkFrame):
         self._list_container.pack(fill="both", expand=True, padx=24, pady=(0, 24))
 
     def refresh(self) -> None:
-        """Laddar om kategorilistan."""
+        """Reloads the category list."""
         colors = self.theme.colors
         for row in self._rows:
             row.destroy()
@@ -233,7 +233,7 @@ class CategoriesView(ctk.CTkFrame):
         if not categories:
             empty = ctk.CTkLabel(
                 self._list_container,
-                text="Inga kategorier",
+                text="No categories",
                 font=ctk.CTkFont(size=14),
                 text_color=colors["text_muted"],
             )
@@ -245,7 +245,7 @@ class CategoriesView(ctk.CTkFrame):
             self._rows.append(self._create_row(cat))
 
     def _create_row(self, cat: Category) -> ctk.CTkFrame:
-        """Skapar en rad i kategorilistan."""
+        """Creates a row in the category list."""
         colors = self.theme.colors
 
         row = ctk.CTkFrame(self._list_container, fg_color="transparent", height=56)
@@ -273,7 +273,7 @@ class CategoriesView(ctk.CTkFrame):
         ).pack(anchor="w")
 
         in_use = self.db.category_in_use(cat.id) if cat.id else False
-        delete_tooltip = " (används)" if in_use else ""
+        delete_tooltip = " (in use)" if in_use else ""
 
         ctk.CTkButton(
             row, text="✎", width=32, height=32,
@@ -298,27 +298,27 @@ class CategoriesView(ctk.CTkFrame):
         return row
 
     def _open_add_dialog(self) -> None:
-        """Öppnar dialog för ny kategori."""
+        """Opens the dialog for a new category."""
         CategoryDialog(self.root, self.db, self.theme, on_save=self.refresh)
 
     def _open_edit_dialog(self, cat: Category) -> None:
-        """Öppnar dialog för att redigera kategori."""
+        """Opens the dialog to edit a category."""
         CategoryDialog(
             self.root, self.db, self.theme,
             on_save=self.refresh, category=cat,
         )
 
     def _confirm_delete(self, cat: Category) -> None:
-        """Bekräftar borttagning av kategori."""
+        """Confirms deleting a category."""
         ConfirmDialog(
             self.root, self.theme,
-            title="Ta bort kategori",
-            message=f"Vill du ta bort kategorin \"{cat.name}\"?",
+            title="Delete category",
+            message=f"Are you sure you want to delete the category \"{cat.name}\"?",
             on_confirm=lambda: self._delete(cat),
         )
 
     def _delete(self, cat: Category) -> None:
-        """Tar bort en kategori."""
+        """Deletes a category."""
         try:
             if cat.id:
                 self.db.delete_category(cat.id)
@@ -327,5 +327,5 @@ class CategoriesView(ctk.CTkFrame):
             show_error(self.root, self.theme, str(exc))
 
     def on_theme_change(self) -> None:
-        """Uppdaterar vy vid temabyte."""
+        """Refreshes the view on theme change."""
         self.refresh()

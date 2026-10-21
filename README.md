@@ -1,31 +1,31 @@
-# Finans Tracker
+# Finance Tracker
 
-En modern desktop-applikation för personlig ekonomihantering, byggd i Python med CustomTkinter.
+A modern desktop application for personal finance management, built in Python with CustomTkinter.
 
-## Funktioner
+## Features
 
-- **Dashboard** – Total balans, månadens inkomster/utgifter och cirkeldiagram per kategori
-- **Transaktioner** – Lägg till, redigera och ta bort inkomster/utgifter med filtrering
-- **Import** – Läs in bank-CSV med förhandsgranskning, automatisk kategorisering och dubblettskydd
-- **Kategorier** – Egna kategorier med färgkodning
-- **Datalagring** – SQLite-databas med automatisk daglig backup
-- **Export** – Exportera transaktioner till CSV
-- **Tema** – Växla mellan mörkt och ljust läge
+- **Dashboard** – Total balance, monthly income/expenses, and a pie chart by category
+- **Transactions** – Add, edit, and delete income/expenses with filtering
+- **Import** – Load bank CSV files with preview, automatic categorization, and duplicate protection
+- **Categories** – Custom categories with color coding
+- **Storage** – SQLite database with automatic daily backups
+- **Export** – Export transactions to CSV
+- **Themes** – Switch between dark and light mode
 
-## Krav
+## Requirements
 
-- Python 3.10 eller senare
-- Windows, macOS eller Linux
+- Python 3.10 or later
+- Windows, macOS, or Linux
 
 ## Installation
 
-1. Klona eller ladda ner projektet:
+1. Clone or download the project:
 
 ```bash
 cd finans-tracker
 ```
 
-2. Skapa och aktivera en virtuell miljö (rekommenderas):
+2. Create and activate a virtual environment (recommended):
 
 ```bash
 python -m venv venv
@@ -37,99 +37,106 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-3. Installera beroenden:
+3. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Starta applikationen
+## Running the application
 
 ```bash
 python main.py
 ```
 
-## Importera bank-CSV
+## Importing bank CSV files
 
-1. Öppna **Transaktioner** och klicka på **Importera CSV**.
-2. Välj en CSV-export från din bank.
-3. Kontrollera förhandsvisningen. Dubbelklicka på en rad för att byta kategori.
-4. Klicka på **Importera**.
+1. Open **Transactions** and click **Import CSV**.
+2. Choose a CSV export from your bank.
+3. Review the preview. Double-click a row to change its category.
+4. Click **Import**.
 
-![Förhandsvisning av CSV-import](docs/import-preview.png)
+![CSV import preview](docs/import-preview.png)
 
-Importen:
+The import:
 
-- hittar rubrikraden även om filen har inledande rader med kontoinformation
-- stödjer `;`, `,`, tabb och `|` som separator
-- läser UTF-8, UTF-16 och CP1252 (vanligt i äldre svenska bankexporter)
-- tolkar både svenska och engelska datum- och beloppsformat
-- använder beloppets tecken när filen saknar en typkolumn
-- hoppar över dubbletter baserat på datum, belopp, typ och beskrivning
-- föreslår kategori med reglerna i `finans_tracker/importers/rules.py`
+- finds the header row even when the file has leading rows with account information
+- supports `;`, `,`, tab, and `|` as delimiters
+- reads UTF-8, UTF-16, and CP1252 (common in older Swedish bank exports)
+- parses both Swedish and English date and amount formats
+- uses the sign of the amount when the file has no type column
+- skips duplicates based on date, amount, type, and description
+- suggests categories using the rules in `finans_tracker/importers/rules.py`
 
-Två exempelfiler finns i `samples/`. Om samma köp förekommer två gånger i
-filen importeras båda raderna, så länge de inte redan finns i databasen.
+Two example files are in `samples/`: `example_bank.csv` uses Swedish headers
+and semicolons, `example_bank_english.csv` uses English headers and commas.
+If the same purchase appears twice in a file, both rows are imported as long
+as they are not already in the database.
 
-### Så fungerar importen
+### How the import works
 
-Importen är delad i tre steg för att vara lätt att testa utan gränssnitt:
+The import is split into three steps so the logic can be tested without the
+GUI:
 
-1. `bank_csv.py` tolkar filen och skapar `ParsedTransaction`-objekt.
-2. `service.py` markerar dubbletter och föreslår kategorier.
-3. `import_dialog.py` visar förhandsvisningen och sparar raderna i en
-   gemensam databastransaktion.
+1. `bank_csv.py` parses the file and creates `ParsedTransaction` objects.
+2. `service.py` marks duplicates and suggests categories.
+3. `import_dialog.py` shows the preview and saves the rows in a single
+   database transaction.
 
-## Tester
+## Tests
 
 ```bash
 pip install -r requirements-dev.txt
 python -m pytest
 ```
 
-Testerna täcker belopps- och datumformat, kodningar, separatorer,
-kategorisering, dubbletträkning och databasens bulkimport.
+The tests cover amount and date formats, encodings, delimiters,
+categorization, duplicate counting, and the database bulk import.
 
-## Data och backup
+## Data and backups
 
-All data sparas lokalt i:
+All data is stored locally in:
 
-- **Databas:** `~/.finans_tracker/finans.db`
-- **Backups:** `~/.finans_tracker/backups/` (max 10 senaste kopior)
+- **Database:** `~/.finans_tracker/finans.db`
+- **Backups:** `~/.finans_tracker/backups/` (last 10 copies)
 
-Automatisk backup sker vid uppstart (en gång per dag) och vid avslut.
+A backup runs at startup (once per day) and on exit.
 
-## Projektstruktur
+Databases created before the English translation used Swedish default
+category names. On first start they are renamed to English automatically;
+your transactions stay linked to the same categories.
+
+## Project structure
 
 ```
 finans-tracker/
-├── main.py                  # Startpunkt
+├── main.py                  # Entry point
 ├── requirements.txt
 ├── requirements-dev.txt
 ├── README.md
-├── samples/                 # Exempel på bank-CSV
-├── tests/                   # Tester för importlogiken
+├── samples/                 # Example bank CSV files
+├── tests/                   # Tests for the import logic
 └── finans_tracker/
-    ├── app.py               # Huvudfönster
-    ├── database.py          # SQLite-hantering
-    ├── models.py            # Datamodeller
-    ├── backup.py            # Säkerhetskopiering
-    ├── export.py            # CSV-export
-    ├── theme.py             # Temahantering
+    ├── app.py               # Main window
+    ├── database.py          # SQLite handling
+    ├── models.py            # Data models
+    ├── backup.py            # Backups
+    ├── export.py            # CSV export
+    ├── theme.py             # Theme handling
     ├── importers/
-    │   ├── bank_csv.py      # Tolkning av CSV-filer
-    │   ├── categorizer.py   # Automatisk kategorisering
-    │   ├── normalize.py     # Belopp, datum och text
-    │   ├── rules.py         # Kategoriseringsregler
-    │   └── service.py       # Dubbletter och importflöde
+    │   ├── bank_csv.py      # CSV parsing
+    │   ├── categorizer.py   # Automatic categorization
+    │   ├── normalize.py     # Amounts, dates, and text
+    │   ├── rules.py         # Categorization rules
+    │   └── service.py       # Duplicates and import flow
     └── ui/
         ├── dashboard.py
         ├── transactions.py
-        ├── import_dialog.py # Förhandsvisning av import
+        ├── import_dialog.py # Import preview
         ├── categories.py
         └── components.py
 ```
 
-## Licens
+## License
 
 MIT

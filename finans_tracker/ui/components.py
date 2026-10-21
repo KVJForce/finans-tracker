@@ -1,4 +1,4 @@
-"""Återanvändbara UI-komponenter."""
+"""Reusable UI components."""
 
 from __future__ import annotations
 
@@ -11,13 +11,13 @@ from finans_tracker.theme import ThemeManager
 
 def format_currency(amount: float) -> str:
     """
-    Formaterar ett belopp som svensk valuta.
+    Formats an amount as Swedish currency.
 
     Args:
-        amount: Belopp att formatera.
+        amount: Amount to format.
 
     Returns:
-        Formaterad sträng, t.ex. "1 234,56 kr".
+        Formatted string, e.g. "1 234,56 kr".
     """
     sign = "-" if amount < 0 else ""
     abs_amount = abs(amount)
@@ -28,7 +28,7 @@ def format_currency(amount: float) -> str:
 
 
 class StatCard(ctk.CTkFrame):
-    """Kort som visar en nyckeltal med etikett."""
+    """Card that shows a key metric with a label."""
 
     def __init__(
         self,
@@ -67,14 +67,14 @@ class StatCard(ctk.CTkFrame):
         self._value_label.pack(anchor="w", padx=20, pady=(0, 16))
 
     def set_value(self, value: str, color: Optional[str] = None) -> None:
-        """Uppdaterar visat värde."""
+        """Updates the displayed value."""
         self._value_label.configure(text=value)
         if color:
             self._value_label.configure(text_color=color)
 
 
 class SidebarButton(ctk.CTkButton):
-    """Navigationsknapp i sidopanelen."""
+    """Navigation button in the sidebar."""
 
     def __init__(
         self,
@@ -104,7 +104,7 @@ class SidebarButton(ctk.CTkButton):
         self._is_active = is_active
 
     def set_active(self, active: bool) -> None:
-        """Markerar knappen som aktiv/inaktiv."""
+        """Marks the button as active/inactive."""
         self._is_active = active
         colors = self._theme.colors
         self.configure(
@@ -113,7 +113,7 @@ class SidebarButton(ctk.CTkButton):
 
 
 class MessageDialog(ctk.CTkToplevel):
-    """Enkel dialog för meddelanden och fel."""
+    """Simple dialog for messages and errors."""
 
     def __init__(
         self,
@@ -168,7 +168,7 @@ class MessageDialog(ctk.CTkToplevel):
 
 
 class ConfirmDialog(ctk.CTkToplevel):
-    """Bekräftelsedialog."""
+    """Confirmation dialog."""
 
     def __init__(
         self,
@@ -201,7 +201,7 @@ class ConfirmDialog(ctk.CTkToplevel):
 
         cancel_btn = ctk.CTkButton(
             btn_frame,
-            text="Avbryt",
+            text="Cancel",
             width=100,
             fg_color="transparent",
             border_width=1,
@@ -214,7 +214,7 @@ class ConfirmDialog(ctk.CTkToplevel):
 
         confirm_btn = ctk.CTkButton(
             btn_frame,
-            text="Bekräfta",
+            text="Confirm",
             width=100,
             fg_color=colors["danger"],
             hover_color=colors["accent_hover"],
@@ -233,10 +233,10 @@ class ConfirmDialog(ctk.CTkToplevel):
 
 
 def show_error(master: ctk.CTk, theme: ThemeManager, message: str) -> None:
-    """Visar ett felmeddelande."""
-    MessageDialog(master, theme, "Fel", message, is_error=True)
+    """Shows an error message."""
+    MessageDialog(master, theme, "Error", message, is_error=True)
 
 
 def show_info(master: ctk.CTk, theme: ThemeManager, message: str) -> None:
-    """Visar ett informationsmeddelande."""
+    """Shows an information message."""
     MessageDialog(master, theme, "Information", message, is_error=False)

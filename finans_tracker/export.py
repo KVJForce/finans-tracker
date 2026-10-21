@@ -1,4 +1,4 @@
-"""CSV-export av transaktionsdata."""
+"""CSV export of transaction data."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from finans_tracker.models import TransactionType
 
 
 class ExportError(Exception):
-    """Fel vid export."""
+    """Error during export."""
 
 
 def export_transactions_to_csv(
@@ -24,21 +24,21 @@ def export_transactions_to_csv(
     transaction_type: Optional[TransactionType] = None,
 ) -> int:
     """
-    Exporterar transaktioner till en CSV-fil.
+    Exports transactions to a CSV file.
 
     Args:
-        db: Databasinstans.
-        output_path: Målfil för exporten.
-        date_from: Valfritt startdatum.
-        date_to: Valfritt slutdatum.
-        category_id: Valfri kategorifilter.
-        transaction_type: Valfri typfilter.
+        db: Database instance.
+        output_path: Destination file for the export.
+        date_from: Optional start date.
+        date_to: Optional end date.
+        category_id: Optional category filter.
+        transaction_type: Optional type filter.
 
     Returns:
-        Antal exporterade rader.
+        Number of exported rows.
 
     Raises:
-        ExportError: Om exporten misslyckas.
+        ExportError: If the export fails.
     """
     transactions = db.get_transactions(
         date_from=date_from,
@@ -52,7 +52,7 @@ def export_transactions_to_csv(
         with output_path.open("w", newline="", encoding="utf-8-sig") as csvfile:
             writer = csv.writer(csvfile, delimiter=";")
             writer.writerow(
-                ["ID", "Datum", "Typ", "Belopp", "Kategori", "Beskrivning"]
+                ["ID", "Date", "Type", "Amount", "Category", "Description"]
             )
             for tx in transactions:
                 writer.writerow(
@@ -66,6 +66,6 @@ def export_transactions_to_csv(
                     ]
                 )
     except OSError as exc:
-        raise ExportError(f"Kunde inte skriva till fil: {output_path}") from exc
+        raise ExportError(f"Could not write to file: {output_path}") from exc
 
     return len(transactions)

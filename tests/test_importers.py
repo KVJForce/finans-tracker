@@ -1,4 +1,4 @@
-"""Tester för CSV-import, kategorisering och dubblettdetektering."""
+"""Tests for CSV import, categorization, and duplicate detection."""
 
 from __future__ import annotations
 
@@ -73,13 +73,14 @@ def test_detect_delimiter_with_decimal_commas() -> None:
 
 
 def test_parse_semicolon_file_with_preamble(tmp_path: Path) -> None:
+    # Swedish headers and type words are covered here.
     content = (
-        "Kontoutdrag;2026-09-30\n"
+        "Account statement;2026-09-30\n"
         "Datum;Beskrivning;Belopp;Typ\n"
-        "2026-09-01;Lön september;28500,00;Inkomst\n"
+        "2026-09-01;Salary September;28500,00;Inkomst\n"
         "2026-09-02;ICA NÄRA;-342,50;Utgift\n"
         "2026-09-03;SL BILJETT;-39,00;\n"
-        "2026-09-04;Okänd rad;;Utgift\n"
+        "2026-09-04;Unknown row;;Utgift\n"
     )
     path = tmp_path / "bank.csv"
     path.write_text(content, encoding="utf-8")
@@ -113,6 +114,7 @@ def test_parse_comma_file_with_english_headers(tmp_path: Path) -> None:
 
 
 def test_parse_cp1252_file(tmp_path: Path) -> None:
+    # Swedish characters must survive CP1252 decoding.
     content = (
         "Datum;Beskrivning;Belopp\n"
         "2026-09-01;Lön;28500,00\n"
@@ -154,7 +156,7 @@ def test_suggest_category_uses_rules(database: Database) -> None:
 
     assert (
         suggest_category("ICA NÄRA STOCKHOLM", TransactionType.EXPENSE, categories)
-        == "Mat & dryck"
+        == "Food & drink"
     )
     assert (
         suggest_category("SL BILJETT", TransactionType.EXPENSE, categories)
@@ -162,30 +164,30 @@ def test_suggest_category_uses_rules(database: Database) -> None:
     )
     assert (
         suggest_category("SPOTIFY AB", TransactionType.EXPENSE, categories)
-        == "Underhållning"
+        == "Entertainment"
     )
     assert (
-        suggest_category("LÖN SEPTEMBER", TransactionType.INCOME, categories)
-        == "Lön"
+        suggest_category("SALARY SEPTEMBER", TransactionType.INCOME, categories)
+        == "Salary"
     )
     assert (
-        suggest_category("Okänd butik", TransactionType.EXPENSE, categories)
-        == "Övrigt"
+        suggest_category("Unknown store", TransactionType.EXPENSE, categories)
+        == "Other"
     )
     assert (
         suggest_category("ICA NÄRA", TransactionType.INCOME, categories)
-        == "Övrigt"
+        == "Other"
     )
 
 
 def test_import_marks_duplicates_and_imports_new_rows(
     tmp_path: Path, database: Database
 ) -> None:
-    mat = next(c for c in database.get_categories() if c.name == "Mat & dryck")
+    food = next(c for c in database.get_categories() if c.name == "Food & drink")
     existing = Transaction(
         id=None,
         amount=342.50,
-        category_id=mat.id,
+        category_id=food.id,
         transaction_date=date(2026, 9, 2),
         description="ICA NÄRA",
         transaction_type=TransactionType.EXPENSE,
@@ -194,10 +196,10 @@ def test_import_marks_duplicates_and_imports_new_rows(
 
     path = tmp_path / "bank.csv"
     path.write_text(
-        "Datum;Beskrivning;Belopp;Typ\n"
-        "2026-09-02;ICA NÄRA;-342,50;Utgift\n"
-        "2026-09-02;ICA NÄRA;-342,50;Utgift\n"
-        "2026-09-01;Lön;28500,00;Inkomst\n",
+        "Date;Description;Amount;Type\n"
+        "2026-09-02;ICA NÄRA;-342,50;Expense\n"
+        "2026-09-02;ICA NÄRA;-342,50;Expense\n"
+        "2026-09-01;Salary;28500,00;Income\n",
         encoding="utf-8",
     )
 
@@ -206,7 +208,7 @@ def test_import_marks_duplicates_and_imports_new_rows(
     assert len(preview.transactions) == 3
     assert preview.duplicates == 1
     assert len(preview.importable) == 2
-    assert preview.transactions[2].category_name == "Lön"
+    assert preview.transactions[2].category_name == "Salary"
 
     transactions = build_transactions(preview)
     assert database.add_transactions(transactions) == 2

@@ -1,4 +1,4 @@
-"""Dialog för att förhandsgranska och importera bank-CSV."""
+"""Dialog for previewing and importing a bank CSV."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from finans_tracker.ui.components import format_currency, show_error, show_info
 
 
 class CategoryPicker(ctk.CTkToplevel):
-    """Liten dialog för att byta kategori på en importerad rad."""
+    """Small dialog for changing the category of an imported row."""
 
     def __init__(
         self,
@@ -37,7 +37,7 @@ class CategoryPicker(ctk.CTkToplevel):
         self._on_save = on_save
         self._names = [category.name for category in categories]
 
-        self.title("Byt kategori")
+        self.title("Change category")
         self.geometry("400x230")
         self.resizable(False, False)
         self.transient(master)
@@ -60,14 +60,14 @@ class CategoryPicker(ctk.CTkToplevel):
         buttons.pack(fill="x", padx=24)
 
         ctk.CTkButton(
-            buttons, text="Avbryt", width=100, height=36,
+            buttons, text="Cancel", width=100, height=36,
             fg_color="transparent", border_width=1,
             border_color=colors["border"], text_color=colors["text_primary"],
             hover_color=colors["sidebar_hover"], command=self.destroy,
         ).pack(side="left")
 
         ctk.CTkButton(
-            buttons, text="Spara", width=110, height=36,
+            buttons, text="Save", width=110, height=36,
             fg_color=colors["accent"], hover_color=colors["accent_hover"],
             command=self._save,
         ).pack(side="right")
@@ -78,7 +78,7 @@ class CategoryPicker(ctk.CTkToplevel):
         self.geometry(f"+{x}+{y}")
 
     def _save(self) -> None:
-        """Sparar vald kategori."""
+        """Saves the selected category."""
         name = self._var.get()
         if name in self._names:
             self._on_save(name)
@@ -86,7 +86,7 @@ class CategoryPicker(ctk.CTkToplevel):
 
 
 class ImportDialog(ctk.CTkToplevel):
-    """Visar en CSV-fil och importerar valda transaktioner."""
+    """Shows a CSV file and imports the selected transactions."""
 
     def __init__(
         self,
@@ -102,7 +102,7 @@ class ImportDialog(ctk.CTkToplevel):
         self.on_imported = on_imported
         self.preview: Optional[ImportPreview] = None
 
-        self.title("Importera bank-CSV")
+        self.title("Import bank CSV")
         self.geometry("980x680")
         self.minsize(820, 560)
         self.transient(master)
@@ -117,19 +117,19 @@ class ImportDialog(ctk.CTkToplevel):
         self.geometry(f"+{x}+{y}")
 
     def _build_ui(self, colors: dict[str, str]) -> None:
-        """Bygger dialogens layout."""
+        """Builds the dialog layout."""
         container = ctk.CTkFrame(self, fg_color="transparent")
         container.pack(fill="both", expand=True, padx=24, pady=24)
 
         ctk.CTkLabel(
-            container, text="Importera bank-CSV",
+            container, text="Import bank CSV",
             font=ctk.CTkFont(size=24, weight="bold"),
             text_color=colors["text_primary"],
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             container,
-            text="Välj en CSV-export från din bank. Dubbletter hoppas över automatiskt.",
+            text="Choose a CSV export from your bank. Duplicates are skipped automatically.",
             font=ctk.CTkFont(size=13),
             text_color=colors["text_secondary"],
         ).pack(anchor="w", pady=(2, 16))
@@ -138,7 +138,7 @@ class ImportDialog(ctk.CTkToplevel):
         file_row.pack(fill="x", pady=(0, 12))
 
         ctk.CTkButton(
-            file_row, text="Välj fil...", width=120, height=38,
+            file_row, text="Choose file...", width=120, height=38,
             fg_color=colors["accent"], hover_color=colors["accent_hover"],
             command=self._choose_file,
         ).pack(side="left")
@@ -147,7 +147,7 @@ class ImportDialog(ctk.CTkToplevel):
         file_info.pack(side="left", padx=12)
 
         self._file_label = ctk.CTkLabel(
-            file_info, text="Ingen fil vald",
+            file_info, text="No file selected",
             font=ctk.CTkFont(size=14, weight="bold"),
             text_color=colors["text_primary"], anchor="w",
         )
@@ -164,12 +164,12 @@ class ImportDialog(ctk.CTkToplevel):
         summary = ctk.CTkFrame(container, fg_color="transparent")
         summary.pack(fill="x", pady=(0, 8))
 
-        self._rows_label = self._summary_label(summary, colors, "0 rader")
+        self._rows_label = self._summary_label(summary, colors, "0 rows")
         self._duplicates_label = self._summary_label(
-            summary, colors, "0 dubbletter", colors["warning"]
+            summary, colors, "0 duplicates", colors["warning"]
         )
         self._new_label = self._summary_label(
-            summary, colors, "0 att importera", colors["success"]
+            summary, colors, "0 to import", colors["success"]
         )
 
         tree_frame = ctk.CTkFrame(
@@ -188,11 +188,11 @@ class ImportDialog(ctk.CTkToplevel):
             style="Import.Treeview",
             selectmode="browse",
         )
-        self._tree.heading("date", text="Datum")
-        self._tree.heading("description", text="Beskrivning")
-        self._tree.heading("type", text="Typ")
-        self._tree.heading("amount", text="Belopp")
-        self._tree.heading("category", text="Kategori")
+        self._tree.heading("date", text="Date")
+        self._tree.heading("description", text="Description")
+        self._tree.heading("type", text="Type")
+        self._tree.heading("amount", text="Amount")
+        self._tree.heading("category", text="Category")
 
         self._tree.column("date", width=95, anchor="w", stretch=False)
         self._tree.column("description", width=380, anchor="w")
@@ -227,20 +227,20 @@ class ImportDialog(ctk.CTkToplevel):
 
         ctk.CTkLabel(
             footer,
-            text="Dubbelklicka på en rad för att byta kategori.",
+            text="Double-click a row to change its category.",
             font=ctk.CTkFont(size=12),
             text_color=colors["text_muted"],
         ).pack(side="left")
 
         self._import_btn = ctk.CTkButton(
-            footer, text="Importera", width=180, height=40,
+            footer, text="Import", width=180, height=40,
             fg_color=colors["accent"], hover_color=colors["accent_hover"],
             state="disabled", command=self._import,
         )
         self._import_btn.pack(side="right")
 
         ctk.CTkButton(
-            footer, text="Avbryt", width=100, height=40,
+            footer, text="Cancel", width=100, height=40,
             fg_color="transparent", border_width=1,
             border_color=colors["border"], text_color=colors["text_primary"],
             hover_color=colors["sidebar_hover"], command=self.destroy,
@@ -253,7 +253,7 @@ class ImportDialog(ctk.CTkToplevel):
         text: str,
         color: Optional[str] = None,
     ) -> ctk.CTkLabel:
-        """Skapar en etikett i sammanfattningsraden."""
+        """Creates a label in the summary row."""
         label = ctk.CTkLabel(
             master, text=text,
             font=ctk.CTkFont(size=13, weight="bold"),
@@ -263,7 +263,7 @@ class ImportDialog(ctk.CTkToplevel):
         return label
 
     def _style_tree(self, colors: dict[str, str]) -> None:
-        """Anpassar ttk-trädet till appens tema."""
+        """Styles the ttk tree to match the app theme."""
         style = ttk.Style(self)
         try:
             style.theme_use("clam")
@@ -293,19 +293,19 @@ class ImportDialog(ctk.CTkToplevel):
         )
 
     def _choose_file(self) -> None:
-        """Öppnar filväljaren och läser den valda filen."""
+        """Opens the file chooser and reads the selected file."""
         filepath = filedialog.askopenfilename(
             parent=self,
-            title="Välj bank-CSV",
+            title="Choose bank CSV",
             initialdir=str(Path.home()),
-            filetypes=[("CSV-filer", "*.csv"), ("Alla filer", "*.*")],
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
         )
         if not filepath:
             return
         self._load(Path(filepath))
 
     def _load(self, path: Path) -> None:
-        """Tolkar filen och fyller förhandsvisningen."""
+        """Parses the file and fills the preview."""
         try:
             self.preview = load_import(path, self.db)
         except CsvImportError as exc:
@@ -319,7 +319,7 @@ class ImportDialog(ctk.CTkToplevel):
         self._populate_tree()
 
     def _populate_tree(self) -> None:
-        """Ritar om förhandsvisningen."""
+        """Redraws the preview."""
         if self.preview is None:
             return
 
@@ -342,7 +342,7 @@ class ImportDialog(ctk.CTkToplevel):
                 values=(
                     item.transaction_date.isoformat(),
                     item.description,
-                    "Inkomst" if is_income else "Utgift",
+                    "Income" if is_income else "Expense",
                     f"{prefix}{format_currency(item.amount)}",
                     item.category_name or "—",
                 ),
@@ -353,11 +353,11 @@ class ImportDialog(ctk.CTkToplevel):
         duplicates = self.preview.duplicates
         importable = len(self.preview.importable)
 
-        rows_text = f"{total} rad" if total == 1 else f"{total} rader"
+        rows_text = f"{total} row" if total == 1 else f"{total} rows"
         duplicates_text = (
-            f"{duplicates} dubblett"
+            f"{duplicates} duplicate"
             if duplicates == 1
-            else f"{duplicates} dubbletter"
+            else f"{duplicates} duplicates"
         )
 
         self._rows_label.configure(text=rows_text)
@@ -365,21 +365,21 @@ class ImportDialog(ctk.CTkToplevel):
             text=duplicates_text,
             text_color=colors["success"] if duplicates == 0 else colors["warning"],
         )
-        self._new_label.configure(text=f"{importable} att importera")
+        self._new_label.configure(text=f"{importable} to import")
         self._import_btn.configure(
-            text=f"Importera {importable}",
+            text=f"Import {importable}",
             state="normal" if importable else "disabled",
         )
 
         if self.preview.skipped_rows:
             first_warning = (
-                f" Första felet: {self.preview.warnings[0]}"
+                f" First error: {self.preview.warnings[0]}"
                 if self.preview.warnings
                 else ""
             )
             self._warning_label.configure(
                 text=(
-                    f"{self.preview.skipped_rows} rader hoppades över."
+                    f"{self.preview.skipped_rows} rows were skipped."
                     f"{first_warning}"
                 )
             )
@@ -387,13 +387,13 @@ class ImportDialog(ctk.CTkToplevel):
             self._warning_label.configure(text="")
 
     def _on_double_click(self, event) -> None:
-        """Öppnar kategorival när en rad dubbelklickas."""
+        """Opens the category picker when a row is double-clicked."""
         item_id = self._tree.identify_row(event.y)
         if item_id:
             self._change_category(item_id)
 
     def _change_category(self, item_id: str) -> None:
-        """Visar kategorival för en rad."""
+        """Shows the category picker for a row."""
         if self.preview is None:
             return
 
@@ -416,7 +416,7 @@ class ImportDialog(ctk.CTkToplevel):
             show_error(
                 self,
                 self.theme,
-                "Det finns ingen kategori som passar transaktionstypen.",
+                "No category matches the transaction type.",
             )
             return
 
@@ -434,7 +434,7 @@ class ImportDialog(ctk.CTkToplevel):
         )
 
     def _import(self) -> None:
-        """Sparar de importerbara transaktionerna."""
+        """Saves the importable transactions."""
         if self.preview is None:
             return
 
@@ -445,11 +445,11 @@ class ImportDialog(ctk.CTkToplevel):
             show_error(self, self.theme, str(exc))
             return
 
-        message = f"{count} transaktioner importerade."
+        message = f"{count} transactions imported."
         if self.preview.duplicates:
-            message += f"\n{self.preview.duplicates} dubbletter hoppades över."
+            message += f"\n{self.preview.duplicates} duplicates were skipped."
         if self.preview.skipped_rows:
-            message += f"\n{self.preview.skipped_rows} rader kunde inte läsas."
+            message += f"\n{self.preview.skipped_rows} rows could not be read."
 
         root = self.master
         self.on_imported()

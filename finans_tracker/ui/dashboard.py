@@ -1,4 +1,4 @@
-"""Dashboard-vy med översikt och diagram."""
+"""Dashboard view with overview and charts."""
 
 from __future__ import annotations
 
@@ -16,11 +16,11 @@ from finans_tracker.ui.components import StatCard, format_currency
 
 
 class DashboardView(ctk.CTkFrame):
-    """Visar ekonomisk översikt och utgiftsdiagram."""
+    """Shows a financial overview and expense chart."""
 
     MONTH_NAMES = [
-        "", "Januari", "Februari", "Mars", "April", "Maj", "Juni",
-        "Juli", "Augusti", "September", "Oktober", "November", "December",
+        "", "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December",
     ]
 
     def __init__(
@@ -43,7 +43,7 @@ class DashboardView(ctk.CTkFrame):
         self.refresh()
 
     def _build_ui(self, colors: dict[str, str]) -> None:
-        """Bygger dashboard-layout."""
+        """Builds the dashboard layout."""
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=24, pady=(24, 16))
 
@@ -68,17 +68,17 @@ class DashboardView(ctk.CTkFrame):
         cards_frame.columnconfigure((0, 1, 2), weight=1, uniform="cards")
 
         self._stat_cards["balance"] = StatCard(
-            cards_frame, self.theme, "Total balans", value_color=colors["accent"]
+            cards_frame, self.theme, "Total balance", value_color=colors["accent"]
         )
         self._stat_cards["balance"].grid(row=0, column=0, padx=(0, 8), sticky="nsew")
 
         self._stat_cards["income"] = StatCard(
-            cards_frame, self.theme, "Inkomster denna månad", value_color=colors["success"]
+            cards_frame, self.theme, "Income this month", value_color=colors["success"]
         )
         self._stat_cards["income"].grid(row=0, column=1, padx=8, sticky="nsew")
 
         self._stat_cards["expense"] = StatCard(
-            cards_frame, self.theme, "Utgifter denna månad", value_color=colors["danger"]
+            cards_frame, self.theme, "Expenses this month", value_color=colors["danger"]
         )
         self._stat_cards["expense"].grid(row=0, column=2, padx=(8, 0), sticky="nsew")
 
@@ -93,7 +93,7 @@ class DashboardView(ctk.CTkFrame):
 
         chart_header = ctk.CTkLabel(
             chart_container,
-            text="Utgifter per kategori",
+            text="Expenses by category",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color=colors["text_primary"],
         )
@@ -104,13 +104,13 @@ class DashboardView(ctk.CTkFrame):
 
         self._empty_label = ctk.CTkLabel(
             self._chart_frame,
-            text="Inga utgifter denna månad",
+            text="No expenses this month",
             font=ctk.CTkFont(size=14),
             text_color=colors["text_muted"],
         )
 
     def refresh(self) -> None:
-        """Uppdaterar alla dashboard-data."""
+        """Refreshes all dashboard data."""
         colors = self.theme.colors
         year = self._current_date.year
         month = self._current_date.month
@@ -136,7 +136,7 @@ class DashboardView(ctk.CTkFrame):
         self._update_chart(year, month)
 
     def _update_chart(self, year: int, month: int) -> None:
-        """Ritar om utgiftsdiagrammet."""
+        """Redraws the expense chart."""
         colors = self.theme.colors
         data = self.db.get_expenses_by_category(year, month)
 
@@ -176,7 +176,7 @@ class DashboardView(ctk.CTkFrame):
             autotext.set_fontsize(8)
 
         ax.set_title(
-            f"Totala utgifter: {format_currency(sum(amounts))}",
+            f"Total expenses: {format_currency(sum(amounts))}",
             color=colors["chart_text"],
             fontsize=12,
             pad=12,
@@ -188,5 +188,5 @@ class DashboardView(ctk.CTkFrame):
         self._canvas.get_tk_widget().pack(fill="both", expand=True)
 
     def on_theme_change(self) -> None:
-        """Uppdaterar vy vid temabyte."""
+        """Updates the view when the theme changes."""
         self.refresh()

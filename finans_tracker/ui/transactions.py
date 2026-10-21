@@ -1,4 +1,4 @@
-"""Transaktionsvy med CRUD och filtrering."""
+"""Transaction view with CRUD and filtering."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from finans_tracker.ui.import_dialog import ImportDialog
 
 
 class TransactionDialog(ctk.CTkToplevel):
-    """Dialog för att lägga till/redigera transaktioner."""
+    """Dialog for adding/editing transactions."""
 
     def __init__(
         self,
@@ -38,7 +38,7 @@ class TransactionDialog(ctk.CTkToplevel):
         self.result_saved = False
 
         is_edit = transaction is not None
-        self.title("Redigera transaktion" if is_edit else "Ny transaktion")
+        self.title("Edit transaction" if is_edit else "New transaction")
         self.geometry("480x520")
         self.resizable(False, False)
         self.transient(master)
@@ -47,9 +47,9 @@ class TransactionDialog(ctk.CTkToplevel):
         form = ctk.CTkFrame(self, fg_color="transparent")
         form.pack(fill="both", expand=True, padx=24, pady=24)
 
-        # Typ
+        # Type
         ctk.CTkLabel(
-            form, text="Typ", font=ctk.CTkFont(size=13, weight="bold"),
+            form, text="Type", font=ctk.CTkFont(size=13, weight="bold"),
             text_color=colors["text_secondary"],
         ).pack(anchor="w", pady=(0, 4))
 
@@ -60,20 +60,20 @@ class TransactionDialog(ctk.CTkToplevel):
         type_frame.pack(fill="x", pady=(0, 12))
 
         ctk.CTkRadioButton(
-            type_frame, text="Utgift", variable=self._type_var, value="expense",
+            type_frame, text="Expense", variable=self._type_var, value="expense",
             command=self._on_type_change,
             text_color=colors["text_primary"],
         ).pack(side="left", padx=(0, 16))
 
         ctk.CTkRadioButton(
-            type_frame, text="Inkomst", variable=self._type_var, value="income",
+            type_frame, text="Income", variable=self._type_var, value="income",
             command=self._on_type_change,
             text_color=colors["text_primary"],
         ).pack(side="left")
 
-        # Belopp
+        # Amount
         ctk.CTkLabel(
-            form, text="Belopp (kr)", font=ctk.CTkFont(size=13, weight="bold"),
+            form, text="Amount (kr)", font=ctk.CTkFont(size=13, weight="bold"),
             text_color=colors["text_secondary"],
         ).pack(anchor="w", pady=(0, 4))
 
@@ -84,22 +84,22 @@ class TransactionDialog(ctk.CTkToplevel):
         if transaction:
             self._amount_entry.insert(0, f"{transaction.amount:.2f}".replace(".", ","))
 
-        # Kategori
+        # Category
         ctk.CTkLabel(
-            form, text="Kategori", font=ctk.CTkFont(size=13, weight="bold"),
+            form, text="Category", font=ctk.CTkFont(size=13, weight="bold"),
             text_color=colors["text_secondary"],
         ).pack(anchor="w", pady=(0, 4))
 
         self._category_var = ctk.StringVar()
         self._category_menu = ctk.CTkOptionMenu(
-            form, variable=self._category_var, height=40, values=["Laddar..."],
+            form, variable=self._category_var, height=40, values=["Loading..."],
         )
         self._category_menu.pack(fill="x", pady=(0, 12))
         self._category_map: dict[str, int] = {}
 
-        # Datum
+        # Date
         ctk.CTkLabel(
-            form, text="Datum (ÅÅÅÅ-MM-DD)", font=ctk.CTkFont(size=13, weight="bold"),
+            form, text="Date (YYYY-MM-DD)", font=ctk.CTkFont(size=13, weight="bold"),
             text_color=colors["text_secondary"],
         ).pack(anchor="w", pady=(0, 4))
 
@@ -112,32 +112,32 @@ class TransactionDialog(ctk.CTkToplevel):
         else:
             self._date_entry.insert(0, date.today().isoformat())
 
-        # Beskrivning
+        # Description
         ctk.CTkLabel(
-            form, text="Beskrivning", font=ctk.CTkFont(size=13, weight="bold"),
+            form, text="Description", font=ctk.CTkFont(size=13, weight="bold"),
             text_color=colors["text_secondary"],
         ).pack(anchor="w", pady=(0, 4))
 
         self._desc_entry = ctk.CTkEntry(
-            form, placeholder_text="Vad gäller transaktionen?", height=40,
+            form, placeholder_text="What is this transaction for?", height=40,
         )
         self._desc_entry.pack(fill="x", pady=(0, 20))
         if transaction:
             self._desc_entry.insert(0, transaction.description)
 
-        # Knappar
+        # Buttons
         btn_frame = ctk.CTkFrame(form, fg_color="transparent")
         btn_frame.pack(fill="x")
 
         ctk.CTkButton(
-            btn_frame, text="Avbryt", width=100, height=40,
+            btn_frame, text="Cancel", width=100, height=40,
             fg_color="transparent", border_width=1, border_color=colors["border"],
             text_color=colors["text_primary"], hover_color=colors["sidebar_hover"],
             command=self.destroy,
         ).pack(side="left")
 
         ctk.CTkButton(
-            btn_frame, text="Spara", width=120, height=40,
+            btn_frame, text="Save", width=120, height=40,
             fg_color=colors["accent"], hover_color=colors["accent_hover"],
             command=self._save,
         ).pack(side="right")
@@ -149,11 +149,11 @@ class TransactionDialog(ctk.CTkToplevel):
         self.geometry(f"+{x}+{y}")
 
     def _on_type_change(self) -> None:
-        """Laddar om kategorier vid typbyte."""
+        """Reloads categories when the type changes."""
         self._load_categories()
 
     def _load_categories(self) -> None:
-        """Fyller kategorimenyn baserat på vald typ."""
+        """Fills the category menu based on the selected type."""
         tx_type = TransactionType(self._type_var.get())
         cat_type = (
             CategoryType.INCOME if tx_type == TransactionType.INCOME
@@ -164,8 +164,8 @@ class TransactionDialog(ctk.CTkToplevel):
         names = list(self._category_map.keys())
 
         if not names:
-            self._category_menu.configure(values=["Inga kategorier"])
-            self._category_var.set("Inga kategorier")
+            self._category_menu.configure(values=["No categories"])
+            self._category_var.set("No categories")
             return
 
         self._category_menu.configure(values=names)
@@ -175,23 +175,23 @@ class TransactionDialog(ctk.CTkToplevel):
             self._category_var.set(names[0])
 
     def _save(self) -> None:
-        """Validerar och sparar transaktionen."""
+        """Validates and saves the transaction."""
         try:
             amount_str = self._amount_entry.get().strip().replace(",", ".")
             amount = float(amount_str)
             if amount <= 0:
-                raise ValueError("Beloppet måste vara positivt.")
+                raise ValueError("The amount must be positive.")
 
             date_str = self._date_entry.get().strip()
             tx_date = date.fromisoformat(date_str)
 
             description = self._desc_entry.get().strip()
             if not description:
-                raise ValueError("Beskrivning får inte vara tom.")
+                raise ValueError("Description cannot be empty.")
 
             category_name = self._category_var.get()
             if category_name not in self._category_map:
-                raise ValueError("Välj en giltig kategori.")
+                raise ValueError("Choose a valid category.")
 
             tx = Transaction(
                 id=self.transaction.id if self.transaction else None,
@@ -218,7 +218,7 @@ class TransactionDialog(ctk.CTkToplevel):
 
 
 class TransactionsView(ctk.CTkFrame):
-    """Hanterar visning och filtrering av transaktioner."""
+    """Handles the display and filtering of transactions."""
 
     def __init__(
         self,
@@ -239,24 +239,24 @@ class TransactionsView(ctk.CTkFrame):
         self.refresh()
 
     def _build_ui(self, colors: dict[str, str]) -> None:
-        """Bygger transaktionslayout."""
+        """Builds the transactions layout."""
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=24, pady=(24, 16))
 
         ctk.CTkLabel(
-            header, text="Transaktioner",
+            header, text="Transactions",
             font=ctk.CTkFont(size=28, weight="bold"),
             text_color=colors["text_primary"],
         ).pack(side="left")
 
         ctk.CTkButton(
-            header, text="+ Ny transaktion", height=40,
+            header, text="+ New transaction", height=40,
             fg_color=colors["accent"], hover_color=colors["accent_hover"],
             command=self._open_add_dialog,
         ).pack(side="right")
 
         ctk.CTkButton(
-            header, text="Importera CSV", height=40, width=130,
+            header, text="Import CSV", height=40, width=130,
             fg_color="transparent", border_width=1, border_color=colors["border"],
             text_color=colors["text_primary"], hover_color=colors["sidebar_hover"],
             command=self._open_import_dialog,
@@ -273,40 +273,40 @@ class TransactionsView(ctk.CTkFrame):
         filter_inner.pack(fill="x", padx=16, pady=12)
 
         ctk.CTkLabel(
-            filter_inner, text="Från:", text_color=colors["text_secondary"],
+            filter_inner, text="From:", text_color=colors["text_secondary"],
         ).pack(side="left", padx=(0, 4))
-        self._date_from = ctk.CTkEntry(filter_inner, width=110, placeholder_text="ÅÅÅÅ-MM-DD")
+        self._date_from = ctk.CTkEntry(filter_inner, width=110, placeholder_text="YYYY-MM-DD")
         self._date_from.pack(side="left", padx=(0, 12))
 
         ctk.CTkLabel(
-            filter_inner, text="Till:", text_color=colors["text_secondary"],
+            filter_inner, text="To:", text_color=colors["text_secondary"],
         ).pack(side="left", padx=(0, 4))
-        self._date_to = ctk.CTkEntry(filter_inner, width=110, placeholder_text="ÅÅÅÅ-MM-DD")
+        self._date_to = ctk.CTkEntry(filter_inner, width=110, placeholder_text="YYYY-MM-DD")
         self._date_to.pack(side="left", padx=(0, 12))
 
         ctk.CTkLabel(
-            filter_inner, text="Kategori:", text_color=colors["text_secondary"],
+            filter_inner, text="Category:", text_color=colors["text_secondary"],
         ).pack(side="left", padx=(0, 4))
-        self._filter_category_var = ctk.StringVar(value="Alla")
+        self._filter_category_var = ctk.StringVar(value="All")
         self._filter_category = ctk.CTkOptionMenu(
-            filter_inner, variable=self._filter_category_var, width=140, values=["Alla"],
+            filter_inner, variable=self._filter_category_var, width=140, values=["All"],
         )
         self._filter_category.pack(side="left", padx=(0, 12))
 
         ctk.CTkButton(
-            filter_inner, text="Filtrera", width=90, height=32,
+            filter_inner, text="Filter", width=90, height=32,
             fg_color=colors["accent"], hover_color=colors["accent_hover"],
             command=self.refresh,
         ).pack(side="left", padx=(0, 8))
 
         ctk.CTkButton(
-            filter_inner, text="Rensa", width=70, height=32,
+            filter_inner, text="Clear", width=70, height=32,
             fg_color="transparent", border_width=1, border_color=colors["border"],
             text_color=colors["text_primary"], hover_color=colors["sidebar_hover"],
             command=self._clear_filters,
         ).pack(side="left")
 
-        # Lista
+        # List
         self._list_container = ctk.CTkScrollableFrame(
             self, fg_color=colors["bg_card"], corner_radius=12,
             border_width=1, border_color=colors["border"],
@@ -316,24 +316,24 @@ class TransactionsView(ctk.CTkFrame):
         self._update_filter_categories()
 
     def _update_filter_categories(self) -> None:
-        """Uppdaterar kategorifilter."""
+        """Updates the category filter."""
         categories = self.db.get_categories()
-        names = ["Alla"] + [c.name for c in categories]
+        names = ["All"] + [c.name for c in categories]
         self._filter_category.configure(values=names)
 
     def _clear_filters(self) -> None:
-        """Återställer alla filter."""
+        """Resets all filters."""
         self._date_from.delete(0, "end")
         self._date_to.delete(0, "end")
-        self._filter_category_var.set("Alla")
+        self._filter_category_var.set("All")
         self.refresh()
 
     def _get_filters(self) -> tuple[Optional[date], Optional[date], Optional[int], bool]:
         """
-        Läser filtervärden från UI.
+        Reads filter values from the UI.
 
         Returns:
-            Tuple med (date_from, date_to, category_id, is_valid).
+            Tuple with (date_from, date_to, category_id, is_valid).
         """
         date_from: Optional[date] = None
         date_to: Optional[date] = None
@@ -345,11 +345,11 @@ class TransactionsView(ctk.CTkFrame):
             if self._date_to.get().strip():
                 date_to = date.fromisoformat(self._date_to.get().strip())
         except ValueError:
-            show_error(self.root, self.theme, "Ogiltigt datumformat. Använd ÅÅÅÅ-MM-DD.")
+            show_error(self.root, self.theme, "Invalid date format. Use YYYY-MM-DD.")
             return None, None, None, False
 
         cat_name = self._filter_category_var.get()
-        if cat_name != "Alla":
+        if cat_name != "All":
             for cat in self.db.get_categories():
                 if cat.name == cat_name and cat.id:
                     category_id = cat.id
@@ -358,7 +358,7 @@ class TransactionsView(ctk.CTkFrame):
         return date_from, date_to, category_id, True
 
     def refresh(self) -> None:
-        """Laddar om transaktionslistan."""
+        """Reloads the transaction list."""
         colors = self.theme.colors
         date_from, date_to, category_id, is_valid = self._get_filters()
         if not is_valid:
@@ -376,7 +376,7 @@ class TransactionsView(ctk.CTkFrame):
         if not transactions:
             empty = ctk.CTkLabel(
                 self._list_container,
-                text="Inga transaktioner hittades",
+                text="No transactions found",
                 font=ctk.CTkFont(size=14),
                 text_color=colors["text_muted"],
             )
@@ -388,7 +388,7 @@ class TransactionsView(ctk.CTkFrame):
             self._rows.append(self._create_row(tx))
 
     def _create_row(self, tx: Transaction) -> ctk.CTkFrame:
-        """Skapar en rad i transaktionslistan."""
+        """Creates a row in the transaction list."""
         colors = self.theme.colors
         is_income = tx.transaction_type == TransactionType.INCOME
         amount_color = colors["success"] if is_income else colors["danger"]
@@ -445,11 +445,11 @@ class TransactionsView(ctk.CTkFrame):
         return row
 
     def _open_add_dialog(self) -> None:
-        """Öppnar dialog för ny transaktion."""
+        """Opens the dialog for a new transaction."""
         TransactionDialog(self.root, self.db, self.theme, on_save=self.refresh)
 
     def _open_import_dialog(self) -> None:
-        """Öppnar dialog för CSV-import."""
+        """Opens the dialog for CSV import."""
         ImportDialog(
             self.root,
             self.db,
@@ -458,23 +458,23 @@ class TransactionsView(ctk.CTkFrame):
         )
 
     def _open_edit_dialog(self, tx: Transaction) -> None:
-        """Öppnar dialog för att redigera transaktion."""
+        """Opens the dialog for editing a transaction."""
         TransactionDialog(
             self.root, self.db, self.theme,
             on_save=self.refresh, transaction=tx,
         )
 
     def _confirm_delete(self, tx: Transaction) -> None:
-        """Bekräftar borttagning av transaktion."""
+        """Confirms deletion of a transaction."""
         ConfirmDialog(
             self.root, self.theme,
-            title="Ta bort transaktion",
-            message=f"Vill du ta bort \"{tx.description}\" ({format_currency(tx.amount)})?",
+            title="Delete transaction",
+            message=f"Are you sure you want to delete \"{tx.description}\" ({format_currency(tx.amount)})?",
             on_confirm=lambda: self._delete(tx),
         )
 
     def _delete(self, tx: Transaction) -> None:
-        """Tar bort en transaktion."""
+        """Deletes a transaction."""
         try:
             if tx.id:
                 self.db.delete_transaction(tx.id)
@@ -483,5 +483,5 @@ class TransactionsView(ctk.CTkFrame):
             show_error(self.root, self.theme, str(exc))
 
     def on_theme_change(self) -> None:
-        """Uppdaterar vy vid temabyte."""
+        """Refreshes the view when the theme changes."""
         self.refresh()

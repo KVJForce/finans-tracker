@@ -1,4 +1,4 @@
-"""Tolkning av CSV-exporter från svenska och utländska banker."""
+"""Parsing of CSV exports from Swedish and international banks."""
 
 from __future__ import annotations
 
@@ -21,12 +21,12 @@ from finans_tracker.models import TransactionType
 
 
 class CsvImportError(Exception):
-    """Fel som kan visas för användaren vid CSV-import."""
+    """Error that can be shown to the user during CSV import."""
 
 
 @dataclass
 class ParsedTransaction:
-    """En transaktion som tagits fram från en CSV-fil men ännu inte sparats."""
+    """A transaction produced from a CSV file but not yet saved."""
 
     transaction_date: date
     description: str
@@ -38,7 +38,7 @@ class ParsedTransaction:
 
 @dataclass
 class ParsedFile:
-    """Resultatet av att tolka en CSV-fil."""
+    """Result of parsing a CSV file."""
 
     transactions: list[ParsedTransaction] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
@@ -112,13 +112,13 @@ MAX_WARNINGS = 20
 
 def decode_csv(raw: bytes) -> tuple[str, str]:
     """
-    Avkodar CSV-data med stöd för vanliga bankkodningar.
+    Decodes CSV data with support for common bank encodings.
 
     Args:
-        raw: Filens råa bytes.
+        raw: Raw bytes of the file.
 
     Returns:
-        Tuple med (text, kodning).
+        Tuple of (text, encoding).
     """
     if raw.startswith(b"\xef\xbb\xbf"):
         return raw.decode("utf-8-sig"), "utf-8-sig"
@@ -136,16 +136,18 @@ def decode_csv(raw: bytes) -> tuple[str, str]:
 
 def detect_delimiter(text: str) -> str:
     """
-    Hittar filens separator genom att välja den som ger mest konsekventa rader.
+    Finds the file's delimiter by choosing the one that yields the most
+    consistent rows.
 
-    Decimalskommatecken i svenska belopp gör att en enkel räkning av tecken
-    inte räcker. Därför jämförs antalet kolumner per rad för varje kandidat.
+    Decimal commas in Swedish amounts mean that a simple character count is
+    not enough. Instead, the number of columns per row is compared for each
+    candidate.
 
     Args:
-        text: Filens innehåll som text.
+        text: The file contents as text.
 
     Returns:
-        Separatorn, normalt ";" eller ",".
+        The delimiter, usually ";" or ",".
     """
     sample = "\n".join(text.splitlines()[:30])
     best: Optional[tuple[str, tuple[int, int]]] = None
@@ -172,12 +174,12 @@ def detect_delimiter(text: str) -> str:
 
 
 def _header_key(value: str) -> str:
-    """Normaliserar en kolumnrubrik för jämförelse."""
+    """Normalizes a column heading for comparison."""
     return re.sub(r"[^a-z0-9]+", " ", fold_text(value)).strip()
 
 
 def _find_header(rows: list[list[str]]) -> tuple[int, dict[str, int]]:
-    """Hittar rubrikraden och mappar kolumnnamn till kolumnindex."""
+    """Finds the header row and maps column names to column indexes."""
     best: Optional[tuple[int, dict[str, int]]] = None
 
     for index, row in enumerate(rows[:20]):
@@ -194,15 +196,15 @@ def _find_header(rows: list[list[str]]) -> tuple[int, dict[str, int]]:
 
     if best is None or not {"date", "description", "amount"} <= best[1].keys():
         raise CsvImportError(
-            "Kunde inte hitta kolumnerna datum, beskrivning och belopp. "
-            "Kontrollera att filen är en CSV-export från din bank."
+            "Could not find the date, description, and amount columns. "
+            "Make sure the file is a CSV export from your bank."
         )
 
     return best
 
 
 def _parse_type(value: str) -> Optional[TransactionType]:
-    """Tolkar en typkolumn som inkomst eller utgift."""
+    """Parses a type column as income or expense."""
     key = _header_key(value)
     if key in INCOME_TYPES:
         return TransactionType.INCOME
@@ -212,41 +214,41 @@ def _parse_type(value: str) -> Optional[TransactionType]:
 
 
 def _cell(row: list[str], index: Optional[int]) -> str:
-    """Hämtar en cell ur en rad och tål att raden är kortare än rubriken."""
+    """Fetches a cell from a row and tolerates rows shorter than the header."""
     if index is None or index >= len(row):
         return ""
     return row[index].strip()
 
 
 def _add_warning(parsed: ParsedFile, message: str) -> None:
-    """Sparar ett begränsat antal varningar."""
+    """Stores a limited number of warnings."""
     if len(parsed.warnings) < MAX_WARNINGS:
         parsed.warnings.append(message)
 
 
 def parse_bank_csv(path: Path) -> ParsedFile:
     """
-    Läser och tolkar en CSV-export från en bank.
+    Reads and parses a CSV export from a bank.
 
-    Filen får innehålla inledande rader före rubrikraden. Både
-    semikolon- och kommaavgränsade filer stöds, liksom UTF-8 och CP1252.
+    The file may contain leading rows before the header row. Both semicolon-
+    and comma-separated files are supported, as are UTF-8 and CP1252.
 
     Args:
-        path: Sökväg till CSV-filen.
+        path: Path to the CSV file.
 
     Returns:
-        ParsedFile med giltiga transaktioner och eventuella varningar.
+        ParsedFile with valid transactions and any warnings.
 
     Raises:
-        CsvImportError: Om filen inte kan läsas eller saknar rätt kolumner.
+        CsvImportError: If the file cannot be read or lacks the right columns.
     """
     try:
         raw = path.read_bytes()
     except OSError as exc:
-        raise CsvImportError(f"Kunde inte läsa filen: {path}") from exc
+        raise CsvImportError(f"Could not read the file: {path}") from exc
 
     if not raw.strip():
-        raise CsvImportError("Filen är tom.")
+        raise CsvImportError("The file is empty.")
 
     text, encoding = decode_csv(raw)
     delimiter = detect_delimiter(text)
@@ -254,7 +256,7 @@ def parse_bank_csv(path: Path) -> ParsedFile:
     try:
         rows = list(csv.reader(io.StringIO(text), delimiter=delimiter))
     except csv.Error as exc:
-        raise CsvImportError("Kunde inte tolka filen som CSV.") from exc
+        raise CsvImportError("Could not parse the file as CSV.") from exc
 
     header_index, columns = _find_header(rows)
     parsed = ParsedFile(encoding=encoding, delimiter=delimiter)
@@ -275,26 +277,26 @@ def parse_bank_csv(path: Path) -> ParsedFile:
 
         if not raw_date:
             parsed.skipped_rows += 1
-            _add_warning(parsed, f"Rad {line_number}: datum saknas.")
+            _add_warning(parsed, f"Row {line_number}: date is missing.")
             continue
 
         try:
             transaction_date = parse_date(raw_date)
         except ValueError:
             parsed.skipped_rows += 1
-            _add_warning(parsed, f"Rad {line_number}: ogiltigt datum {raw_date!r}.")
+            _add_warning(parsed, f"Row {line_number}: invalid date {raw_date!r}.")
             continue
 
         try:
             amount = parse_amount(raw_amount)
         except ValueError:
             parsed.skipped_rows += 1
-            _add_warning(parsed, f"Rad {line_number}: ogiltigt belopp {raw_amount!r}.")
+            _add_warning(parsed, f"Row {line_number}: invalid amount {raw_amount!r}.")
             continue
 
         if amount == 0:
             parsed.skipped_rows += 1
-            _add_warning(parsed, f"Rad {line_number}: beloppet är noll.")
+            _add_warning(parsed, f"Row {line_number}: amount is zero.")
             continue
 
         transaction_type = _parse_type(_cell(row, columns.get("type")))
@@ -306,7 +308,7 @@ def parse_bank_csv(path: Path) -> ParsedFile:
         parsed.transactions.append(
             ParsedTransaction(
                 transaction_date=transaction_date,
-                description=description or "Importerad transaktion",
+                description=description or "Imported transaction",
                 amount=abs(amount),
                 transaction_type=transaction_type,
                 category_name=_cell(row, columns.get("category")) or None,
@@ -315,8 +317,8 @@ def parse_bank_csv(path: Path) -> ParsedFile:
 
     if not parsed.transactions:
         raise CsvImportError(
-            "Inga giltiga transaktioner hittades i filen. "
-            "Kontrollera datum- och beloppsformaten."
+            "No valid transactions found in the file. "
+            "Check the date and amount formats."
         )
 
     return parsed

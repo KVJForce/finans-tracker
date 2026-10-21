@@ -1,4 +1,4 @@
-"""Orkestrering av CSV-import: tolkning, dubbletter och kategorier."""
+"""Orchestration of CSV import: parsing, duplicates, and categories."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from finans_tracker.models import (
 
 @dataclass
 class ImportPreview:
-    """Förhandsvisning av en CSV-import."""
+    """Preview of a CSV import."""
 
     source: Path
     transactions: list[ParsedTransaction] = field(default_factory=list)
@@ -37,12 +37,12 @@ class ImportPreview:
 
     @property
     def duplicates(self) -> int:
-        """Antal rader som redan finns i databasen."""
+        """Number of rows that already exist in the database."""
         return sum(1 for transaction in self.transactions if transaction.is_duplicate)
 
     @property
     def importable(self) -> list[ParsedTransaction]:
-        """Rader som kommer att importeras."""
+        """Rows that will be imported."""
         return [
             transaction
             for transaction in self.transactions
@@ -51,7 +51,7 @@ class ImportPreview:
 
 
 def _is_compatible(category: Category, transaction_type: TransactionType) -> bool:
-    """Kontrollerar att en kategori kan användas för en transaktionstyp."""
+    """Checks that a category can be used for a transaction type."""
     if category.category_type == CategoryType.BOTH:
         return True
     if transaction_type == TransactionType.INCOME:
@@ -62,7 +62,7 @@ def _is_compatible(category: Category, transaction_type: TransactionType) -> boo
 def _pick_category(
     transaction: ParsedTransaction, categories: list[Category]
 ) -> Optional[Category]:
-    """Väljer en giltig kategori, med "Övrigt" som sista utväg."""
+    """Picks a valid category, falling back to "Other" as a last resort."""
     compatible = [
         category
         for category in categories
@@ -72,28 +72,28 @@ def _pick_category(
         if category.name == transaction.category_name:
             return category
     for category in compatible:
-        if category.name == "Övrigt":
+        if category.name == "Other":
             return category
     return compatible[0] if compatible else None
 
 
 def load_import(path: Path, db: Database) -> ImportPreview:
     """
-    Läser en CSV-fil och förbereder en import.
+    Reads a CSV file and prepares an import.
 
-    Dubbletter identifieras med datum, belopp, typ och normaliserad
-    beskrivning. Om filen innehåller två identiska rader och databasen redan
-    har en av dem importeras den andra raden.
+    Duplicates are identified by date, amount, type, and normalized
+    description. If the file contains two identical rows and the database
+    already has one of them, the other row is imported.
 
     Args:
-        path: Sökväg till CSV-filen.
-        db: Databasen som befintliga transaktioner läses från.
+        path: Path to the CSV file.
+        db: Database to read existing transactions from.
 
     Returns:
-        ImportPreview redo att visas och importeras.
+        ImportPreview ready to be displayed and imported.
 
     Raises:
-        CsvImportError: Om filen inte kan tolkas.
+        CsvImportError: If the file cannot be parsed.
     """
     parsed = parse_bank_csv(path)
     categories = db.get_categories()
@@ -145,16 +145,16 @@ def load_import(path: Path, db: Database) -> ImportPreview:
 
 def build_transactions(preview: ImportPreview) -> list[Transaction]:
     """
-    Omvandlar importerbara rader till Transaction-objekt.
+    Converts importable rows into Transaction objects.
 
     Args:
-        preview: Förhandsvisningen som ska importeras.
+        preview: The preview to import.
 
     Returns:
-        Transaktioner redo att sparas.
+        Transactions ready to be saved.
 
     Raises:
-        CsvImportError: Om en rad saknar en giltig kategori.
+        CsvImportError: If a row lacks a valid category.
     """
     by_name = {category.name: category for category in preview.categories}
     result: list[Transaction] = []
@@ -163,7 +163,7 @@ def build_transactions(preview: ImportPreview) -> list[Transaction]:
         category = by_name.get(item.category_name or "")
         if category is None or category.id is None:
             raise CsvImportError(
-                f"Ingen giltig kategori för '{item.description}'."
+                f"No valid category for '{item.description}'."
             )
 
         result.append(

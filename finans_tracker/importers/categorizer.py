@@ -1,4 +1,4 @@
-"""Automatisk kategorisering av transaktioner utifrån nyckelord."""
+"""Automatic categorization of transactions based on keywords."""
 
 from __future__ import annotations
 
@@ -11,12 +11,12 @@ from finans_tracker.models import Category, CategoryType, TransactionType
 
 
 def _searchable(value: str) -> str:
-    """Gör text sökbar: gemener, utan diakriter och skiljetecken."""
+    """Makes text searchable: lowercase, without diacritics or punctuation."""
     return re.sub(r"[^a-z0-9]+", " ", fold_text(value)).strip()
 
 
 def _keyword_matches(text: str, keyword: str) -> bool:
-    """Matchar ett nyckelord som ett helt ord i den sökbara texten."""
+    """Matches a keyword as a whole word in the searchable text."""
     folded = _searchable(keyword)
     return bool(folded) and f" {folded} " in f" {text} "
 
@@ -27,18 +27,18 @@ def suggest_category(
     categories: list[Category],
 ) -> Optional[str]:
     """
-    Föreslår en kategori för en transaktion.
+    Suggests a category for a transaction.
 
-    Reglerna i ``rules.py`` matchas i ordning och första träffen vinner. Om
-    ingen regel matchar används kategorin "Övrigt" när den finns.
+    The rules in ``rules.py`` are matched in order and the first hit wins.
+    When no rule matches, the category "Other" is used if it exists.
 
     Args:
-        description: Transaktionens beskrivning.
-        transaction_type: Inkomst eller utgift.
-        categories: Tillgängliga kategorier.
+        description: Description of the transaction.
+        transaction_type: Income or expense.
+        categories: Available categories.
 
     Returns:
-        Kategorinamn, eller None om ingen passande kategori finns.
+        Category name, or None if no suitable category exists.
     """
     allowed = (
         CategoryType.INCOME
@@ -59,5 +59,5 @@ def suggest_category(
         if category:
             return category.name
 
-    fallback = by_name.get(_searchable("Övrigt"))
+    fallback = by_name.get(_searchable("Other"))
     return fallback.name if fallback else None

@@ -1,4 +1,4 @@
-"""Datamodeller för Finans Tracker."""
+"""Data models for Finance Tracker."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import Optional
 
 
 def normalize_description(description: str) -> str:
-    """Normaliserar en beskrivning för jämförelse och kategorisering."""
+    """Normalizes a description for comparison and categorization."""
     return " ".join(description.casefold().split())
 
 
@@ -20,13 +20,13 @@ def transaction_fingerprint(
     description: str,
 ) -> tuple[str, int, str, str]:
     """
-    Skapar ett fingeravtryck som identifierar en transaktion.
+    Creates a fingerprint that identifies a transaction.
 
-    Används för att hitta dubbletter vid import. Beloppet räknas om till
-    ören för att undvika flyttalsproblem.
+    Used to detect duplicates during import. The amount is converted to
+    integer öre to avoid floating point issues.
 
     Returns:
-        Tuple med (datum, belopp i ören, typ, normaliserad beskrivning).
+        Tuple of (date, amount in öre, type, normalized description).
     """
     return (
         transaction_date.isoformat(),
@@ -37,14 +37,14 @@ def transaction_fingerprint(
 
 
 class TransactionType(str, Enum):
-    """Typ av transaktion."""
+    """Type of transaction."""
 
     INCOME = "income"
     EXPENSE = "expense"
 
 
 class CategoryType(str, Enum):
-    """Typ av kategori."""
+    """Type of category."""
 
     INCOME = "income"
     EXPENSE = "expense"
@@ -53,7 +53,7 @@ class CategoryType(str, Enum):
 
 @dataclass
 class Category:
-    """Representerar en transaktionskategori."""
+    """Represents a transaction category."""
 
     id: Optional[int]
     name: str
@@ -62,18 +62,18 @@ class Category:
 
     @property
     def display_type(self) -> str:
-        """Returnerar en läsbar typbeskrivning."""
+        """Returns a human-readable type label."""
         labels = {
-            CategoryType.INCOME: "Inkomst",
-            CategoryType.EXPENSE: "Utgift",
-            CategoryType.BOTH: "Båda",
+            CategoryType.INCOME: "Income",
+            CategoryType.EXPENSE: "Expense",
+            CategoryType.BOTH: "Both",
         }
         return labels[self.category_type]
 
 
 @dataclass
 class Transaction:
-    """Representerar en finansiell transaktion."""
+    """Represents a financial transaction."""
 
     id: Optional[int]
     amount: float
@@ -86,20 +86,20 @@ class Transaction:
 
     @property
     def signed_amount(self) -> float:
-        """Returnerar beloppet med rätt tecken."""
+        """Returns the amount with the correct sign."""
         if self.transaction_type == TransactionType.EXPENSE:
             return -abs(self.amount)
         return abs(self.amount)
 
     @property
     def display_type(self) -> str:
-        """Returnerar en läsbar typbeskrivning."""
-        return "Inkomst" if self.transaction_type == TransactionType.INCOME else "Utgift"
+        """Returns a human-readable type label."""
+        return "Income" if self.transaction_type == TransactionType.INCOME else "Expense"
 
 
 @dataclass
 class MonthlySummary:
-    """Sammanfattning av månadens ekonomi."""
+    """Summary of a month's finances."""
 
     total_balance: float
     monthly_income: float

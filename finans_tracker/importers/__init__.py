@@ -1,4 +1,4 @@
-"""Exporterar importfunktioner."""
+"""Public API for the CSV import pipeline."""
 
 from finans_tracker.importers.bank_csv import (
     CsvImportError,

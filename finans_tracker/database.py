@@ -1,4 +1,4 @@
-"""SQLite-databashantering för Finans Tracker."""
+"""SQLite database management for Finance Tracker."""
 
 from __future__ import annotations
 
@@ -17,34 +17,47 @@ from finans_tracker.models import (
 )
 
 DEFAULT_CATEGORIES: list[tuple[str, str, str]] = [
-    ("Lön", "#2ecc71", "income"),
+    ("Salary", "#2ecc71", "income"),
     ("Freelance", "#27ae60", "income"),
-    ("Investeringar", "#1abc9c", "income"),
-    ("Övrig inkomst", "#16a085", "income"),
-    ("Mat & dryck", "#e74c3c", "expense"),
-    ("Boende", "#c0392b", "expense"),
+    ("Investments", "#1abc9c", "income"),
+    ("Other income", "#16a085", "income"),
+    ("Food & drink", "#e74c3c", "expense"),
+    ("Housing", "#c0392b", "expense"),
     ("Transport", "#e67e22", "expense"),
-    ("Underhållning", "#9b59b6", "expense"),
+    ("Entertainment", "#9b59b6", "expense"),
     ("Shopping", "#3498db", "expense"),
-    ("Hälsa", "#1abc9c", "expense"),
-    ("Utbildning", "#2980b9", "expense"),
-    ("Övrigt", "#95a5a6", "both"),
+    ("Health", "#1abc9c", "expense"),
+    ("Education", "#2980b9", "expense"),
+    ("Other", "#95a5a6", "both"),
 ]
+
+# Legacy Swedish names are renamed on startup so existing databases keep working.
+LEGACY_CATEGORY_NAMES: dict[str, str] = {
+    "Lön": "Salary",
+    "Investeringar": "Investments",
+    "Övrig inkomst": "Other income",
+    "Mat & dryck": "Food & drink",
+    "Boende": "Housing",
+    "Underhållning": "Entertainment",
+    "Hälsa": "Health",
+    "Utbildning": "Education",
+    "Övrigt": "Other",
+}
 
 
 class DatabaseError(Exception):
-    """Basfel för databasoperationer."""
+    """Base error for database operations."""
 
 
 class Database:
-    """Hanterar all persistent lagring via SQLite."""
+    """Handles all persistent storage through SQLite."""
 
     def __init__(self, db_path: Path) -> None:
         """
-        Initierar databasanslutning.
+        Initializes the database connection.
 
         Args:
-            db_path: Sökväg till SQLite-databasfilen.
+            db_path: Path to the SQLite database file.
         """
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -52,7 +65,7 @@ class Database:
 
     @contextmanager
     def _connection(self) -> Generator[sqlite3.Connection, None, None]:
-        """Ger en databasanslutning med radfabriker."""
+        """Yields a database connection with row factories."""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")
@@ -66,7 +79,7 @@ class Database:
             conn.close()
 
     def _init_schema(self) -> None:
-        """Skapar tabeller och standarddata om de saknas."""
+        """Creates tables and seeds default data when missing."""
         with self._connection() as conn:
             conn.executescript(
                 """
@@ -112,19 +125,34 @@ class Database:
                         (name, color, cat_type),
                     )
 
-    # --- Kategorier ---
+            self._migrate_category_names(conn)
+
+    @staticmethod
+    def _migrate_category_names(conn: sqlite3.Connection) -> None:
+        """Renames legacy Swedish default categories to their English names."""
+        existing = {row["name"] for row in conn.execute("SELECT name FROM categories")}
+        for old_name, new_name in LEGACY_CATEGORY_NAMES.items():
+            if old_name in existing and new_name not in existing:
+                conn.execute(
+                    "UPDATE categories SET name = ? WHERE name = ?",
+                    (new_name, old_name),
+                )
+                existing.discard(old_name)
+                existing.add(new_name)
+
+    # --- Categories ---
 
     def get_categories(
         self, category_type: Optional[CategoryType] = None
     ) -> list[Category]:
         """
-        Hämtar alla kategorier, valfritt filtrerade på typ.
+        Fetches all categories, optionally filtered by type.
 
         Args:
-            category_type: Filtrera på inkomst, utgift eller båda.
+            category_type: Filter by income, expense, or both.
 
         Returns:
-            Lista med kategorier sorterade alfabetiskt.
+            List of categories sorted alphabetically.
         """
         query = "SELECT * FROM categories"
         params: tuple = ()
@@ -138,7 +166,7 @@ class Database:
         return [self._row_to_category(row) for row in rows]
 
     def get_category(self, category_id: int) -> Optional[Category]:
-        """Hämtar en kategori via ID."""
+        """Fetches a category by ID."""
         with self._connection() as conn:
             row = conn.execute(
                 "SELECT * FROM categories WHERE id = ?", (category_id,)
@@ -147,16 +175,16 @@ class Database:
 
     def add_category(self, category: Category) -> int:
         """
-        Skapar en ny kategori.
+        Creates a new category.
 
         Args:
-            category: Kategori att spara.
+            category: Category to save.
 
         Returns:
-            ID för den nya kategorin.
+            ID of the new category.
 
         Raises:
-            DatabaseError: Om namnet redan finns.
+            DatabaseError: If the name already exists.
         """
         try:
             with self._connection() as conn:
@@ -169,17 +197,17 @@ class Database:
                 )
                 return int(cursor.lastrowid)
         except sqlite3.IntegrityError as exc:
-            raise DatabaseError(f"Kategorin '{category.name}' finns redan.") from exc
+            raise DatabaseError(f"Category '{category.name}' already exists.") from exc
 
     def update_category(self, category: Category) -> None:
         """
-        Uppdaterar en befintlig kategori.
+        Updates an existing category.
 
         Raises:
-            DatabaseError: Om kategorin saknas eller namnet är upptaget.
+            DatabaseError: If the category is missing or the name is taken.
         """
         if category.id is None:
-            raise DatabaseError("Kategori-ID saknas.")
+            raise DatabaseError("Category ID is missing.")
         try:
             with self._connection() as conn:
                 result = conn.execute(
@@ -195,16 +223,16 @@ class Database:
                     ),
                 )
                 if result.rowcount == 0:
-                    raise DatabaseError("Kategorin kunde inte hittas.")
+                    raise DatabaseError("Category could not be found.")
         except sqlite3.IntegrityError as exc:
-            raise DatabaseError(f"Kategorin '{category.name}' finns redan.") from exc
+            raise DatabaseError(f"Category '{category.name}' already exists.") from exc
 
     def delete_category(self, category_id: int) -> None:
         """
-        Tar bort en kategori om den inte används.
+        Deletes a category if it is not in use.
 
         Raises:
-            DatabaseError: Om kategorin har transaktioner eller saknas.
+            DatabaseError: If the category has transactions or is missing.
         """
         with self._connection() as conn:
             usage = conn.execute(
@@ -213,16 +241,16 @@ class Database:
             ).fetchone()[0]
             if usage > 0:
                 raise DatabaseError(
-                    "Kategorin kan inte tas bort eftersom den har transaktioner kopplade."
+                    "The category cannot be deleted because it has linked transactions."
                 )
             result = conn.execute(
                 "DELETE FROM categories WHERE id = ?", (category_id,)
             )
             if result.rowcount == 0:
-                raise DatabaseError("Kategorin kunde inte hittas.")
+                raise DatabaseError("Category could not be found.")
 
     def category_in_use(self, category_id: int) -> bool:
-        """Kontrollerar om en kategori har transaktioner."""
+        """Checks whether a category has transactions."""
         with self._connection() as conn:
             count = conn.execute(
                 "SELECT COUNT(*) FROM transactions WHERE category_id = ?",
@@ -230,7 +258,7 @@ class Database:
             ).fetchone()[0]
         return count > 0
 
-    # --- Transaktioner ---
+    # --- Transactions ---
 
     def get_transactions(
         self,
@@ -240,16 +268,16 @@ class Database:
         transaction_type: Optional[TransactionType] = None,
     ) -> list[Transaction]:
         """
-        Hämtar transaktioner med valfria filter.
+        Fetches transactions with optional filters.
 
         Args:
-            date_from: Startdatum (inklusive).
-            date_to: Slutdatum (inklusive).
-            category_id: Filtrera på kategori.
-            transaction_type: Filtrera på inkomst/utgift.
+            date_from: Start date (inclusive).
+            date_to: End date (inclusive).
+            category_id: Filter by category.
+            transaction_type: Filter by income or expense.
 
         Returns:
-            Lista med transaktioner sorterade efter datum (nyast först).
+            List of transactions sorted by date (newest first).
         """
         query = """
             SELECT t.*, c.name AS category_name, c.color AS category_color
@@ -279,7 +307,7 @@ class Database:
         return [self._row_to_transaction(row) for row in rows]
 
     def get_transaction(self, transaction_id: int) -> Optional[Transaction]:
-        """Hämtar en transaktion via ID."""
+        """Fetches a transaction by ID."""
         with self._connection() as conn:
             row = conn.execute(
                 """
@@ -294,13 +322,13 @@ class Database:
 
     def add_transaction(self, transaction: Transaction) -> int:
         """
-        Skapar en ny transaktion.
+        Creates a new transaction.
 
         Returns:
-            ID för den nya transaktionen.
+            ID of the new transaction.
 
         Raises:
-            DatabaseError: Vid ogiltiga data.
+            DatabaseError: On invalid data.
         """
         self._validate_transaction(transaction)
         try:
@@ -321,20 +349,20 @@ class Database:
                 )
                 return int(cursor.lastrowid)
         except sqlite3.IntegrityError as exc:
-            raise DatabaseError("Kunde inte spara transaktionen. Kontrollera kategorin.") from exc
+            raise DatabaseError("Could not save the transaction. Check the category.") from exc
 
     def add_transactions(self, transactions: list[Transaction]) -> int:
         """
-        Sparar flera transaktioner i en gemensam databastransaktion.
+        Saves multiple transactions in a single database transaction.
 
         Args:
-            transactions: Transaktioner att spara.
+            transactions: Transactions to save.
 
         Returns:
-            Antal sparade transaktioner.
+            Number of saved transactions.
 
         Raises:
-            DatabaseError: Om någon transaktion är ogiltig.
+            DatabaseError: If any transaction is invalid.
         """
         if not transactions:
             return 0
@@ -363,15 +391,15 @@ class Database:
                 )
         except sqlite3.IntegrityError as exc:
             raise DatabaseError(
-                "Kunde inte importera transaktionerna. Kontrollera kategorierna."
+                "Could not import the transactions. Check the categories."
             ) from exc
 
         return len(transactions)
 
     def update_transaction(self, transaction: Transaction) -> None:
-        """Uppdaterar en befintlig transaktion."""
+        """Updates an existing transaction."""
         if transaction.id is None:
-            raise DatabaseError("Transaktions-ID saknas.")
+            raise DatabaseError("Transaction ID is missing.")
         self._validate_transaction(transaction)
         try:
             with self._connection() as conn:
@@ -393,31 +421,31 @@ class Database:
                     ),
                 )
                 if result.rowcount == 0:
-                    raise DatabaseError("Transaktionen kunde inte hittas.")
+                    raise DatabaseError("Transaction could not be found.")
         except sqlite3.IntegrityError as exc:
-            raise DatabaseError("Kunde inte uppdatera transaktionen.") from exc
+            raise DatabaseError("Could not update the transaction.") from exc
 
     def delete_transaction(self, transaction_id: int) -> None:
-        """Tar bort en transaktion."""
+        """Deletes a transaction."""
         with self._connection() as conn:
             result = conn.execute(
                 "DELETE FROM transactions WHERE id = ?", (transaction_id,)
             )
             if result.rowcount == 0:
-                raise DatabaseError("Transaktionen kunde inte hittas.")
+                raise DatabaseError("Transaction could not be found.")
 
-    # --- Statistik ---
+    # --- Statistics ---
 
     def get_monthly_summary(self, year: int, month: int) -> MonthlySummary:
         """
-        Beräknar ekonomisk sammanfattning för en given månad.
+        Calculates a financial summary for a given month.
 
         Args:
-            year: År (t.ex. 2026).
-            month: Månad (1-12).
+            year: Year (e.g. 2026).
+            month: Month (1-12).
 
         Returns:
-            MonthlySummary med balans och totalsummor.
+            MonthlySummary with balance and totals.
         """
         start = date(year, month, 1)
         if month == 12:
@@ -471,10 +499,10 @@ class Database:
         self, year: int, month: int
     ) -> list[tuple[str, float, str]]:
         """
-        Hämtar utgifter grupperade per kategori för en månad.
+        Fetches expenses grouped by category for a month.
 
         Returns:
-            Lista med (kategorinamn, belopp, färg).
+            List of (category name, amount, color).
         """
         start = date(year, month, 1)
         if month == 12:
@@ -498,10 +526,10 @@ class Database:
 
         return [(row["name"], float(row["total"]), row["color"]) for row in rows]
 
-    # --- Inställningar ---
+    # --- Settings ---
 
     def get_setting(self, key: str, default: str = "") -> str:
-        """Hämtar en inställning."""
+        """Fetches a setting."""
         with self._connection() as conn:
             row = conn.execute(
                 "SELECT value FROM settings WHERE key = ?", (key,)
@@ -509,7 +537,7 @@ class Database:
         return row["value"] if row else default
 
     def set_setting(self, key: str, value: str) -> None:
-        """Sparar en inställning."""
+        """Saves a setting."""
         with self._connection() as conn:
             conn.execute(
                 """
@@ -519,21 +547,21 @@ class Database:
                 (key, value),
             )
 
-    # --- Hjälpmetoder ---
+    # --- Helpers ---
 
     @staticmethod
     def _validate_transaction(transaction: Transaction) -> None:
-        """Validerar transaktionsdata."""
+        """Validates transaction data."""
         if transaction.amount <= 0:
-            raise DatabaseError("Beloppet måste vara större än noll.")
+            raise DatabaseError("Amount must be greater than zero.")
         if not transaction.description.strip():
-            raise DatabaseError("Beskrivning får inte vara tom.")
+            raise DatabaseError("Description cannot be empty.")
         if transaction.category_id <= 0:
-            raise DatabaseError("En giltig kategori måste väljas.")
+            raise DatabaseError("A valid category must be selected.")
 
     @staticmethod
     def _row_to_category(row: sqlite3.Row) -> Category:
-        """Konverterar databasrad till Category."""
+        """Converts a database row to a Category."""
         return Category(
             id=row["id"],
             name=row["name"],
@@ -543,7 +571,7 @@ class Database:
 
     @staticmethod
     def _row_to_transaction(row: sqlite3.Row) -> Transaction:
-        """Konverterar databasrad till Transaction."""
+        """Converts a database row to a Transaction."""
         return Transaction(
             id=row["id"],
             amount=row["amount"],

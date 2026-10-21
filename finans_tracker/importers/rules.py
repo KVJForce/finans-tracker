@@ -1,31 +1,51 @@
-"""Standardregler för automatisk kategorisering av importerade transaktioner.
+"""Default rules for automatically categorizing imported transactions.
 
-Reglerna matchas i ordning. Första träffen vinner. Redigera listan för att
-anpassa kategoriseringen till dina egna vanor.
+Rules are matched in order and the first hit wins. Edit the list to adapt
+categorization to your own habits. Keywords cover both Swedish and English
+bank descriptions.
 """
 
 from __future__ import annotations
 
-# (nyckelord, kategorinamn)
-# Kategorinamnen måste matcha namnen i databasen.
+# (keywords, category name)
+# Category names must match the names in the database.
 DEFAULT_RULES: tuple[tuple[tuple[str, ...], str], ...] = (
-    # Inkomster
-    (("lön", "lon", "salary", "månadslön", "manadslon"), "Lön"),
+    # Income
+    (("lön", "lon", "salary", "månadslön", "manadslon"), "Salary"),
     (("freelance", "frilans", "arvode", "konsultarvode"), "Freelance"),
-    (("utdelning", "ränta", "ranta", "aktie", "fond", "investering"), "Investeringar"),
     (
         (
-            "swish in",
+            "utdelning",
+            "ränta",
+            "ranta",
+            "aktie",
+            "fond",
+            "investering",
+            "dividend",
+            "interest",
+            "stock",
+            "fund",
+            "investment",
+        ),
+        "Investments",
+    ),
+    (
+        (
+            "swish",
             "återbetalning",
             "aterbetalning",
             "skatteåterbäring",
             "skatteaterbaring",
             "bidrag",
             "csn",
+            "refund",
+            "tax refund",
+            "benefit",
+            "grant",
         ),
-        "Övrig inkomst",
+        "Other income",
     ),
-    # Utgifter
+    # Expenses
     (
         (
             "ica",
@@ -48,13 +68,19 @@ DEFAULT_RULES: tuple[tuple[tuple[str, ...], str], ...] = (
             "subway",
             "pizza",
             "restaurang",
+            "restaurant",
             "sushi",
             "foodora",
             "wolt",
             "systembolaget",
             "bolaget",
+            "supermarket",
+            "grocery",
+            "café",
+            "cafe",
+            "coffee",
         ),
-        "Mat & dryck",
+        "Food & drink",
     ),
     (
         (
@@ -75,8 +101,11 @@ DEFAULT_RULES: tuple[tuple[tuple[str, ...], str], ...] = (
             "hemforsakring",
             "fastighetsägarna",
             "fastighetsagarna",
+            "rent",
+            "mortgage",
+            "utilities",
         ),
-        "Boende",
+        "Housing",
     ),
     (
         (
@@ -97,11 +126,20 @@ DEFAULT_RULES: tuple[tuple[tuple[str, ...], str], ...] = (
             "ingo",
             "st1",
             "parkering",
+            "parking",
             "apt",
             "biltvätt",
             "biltvatt",
             "besiktning",
+            "inspection",
             "transportstyrelsen",
+            "buss",
+            "bus",
+            "train",
+            "metro",
+            "tram",
+            "fuel",
+            "petrol",
         ),
         "Transport",
     ),
@@ -119,13 +157,19 @@ DEFAULT_RULES: tuple[tuple[tuple[str, ...], str], ...] = (
             "xbox",
             "nintendo",
             "bio",
+            "cinema",
             "eventim",
             "ticketmaster",
             "liseberg",
             "skansen",
             "museum",
+            "concert",
+            "theater",
+            "theatre",
+            "streaming",
+            "gaming",
         ),
-        "Underhållning",
+        "Entertainment",
     ),
     (
         (
@@ -150,6 +194,9 @@ DEFAULT_RULES: tuple[tuple[tuple[str, ...], str], ...] = (
             "media markt",
             "temu",
             "shein",
+            "electronics",
+            "furniture",
+            "clothing",
         ),
         "Shopping",
     ),
@@ -157,15 +204,19 @@ DEFAULT_RULES: tuple[tuple[tuple[str, ...], str], ...] = (
         (
             "apotek",
             "apoteket",
+            "pharmacy",
             "vårdcentral",
             "vardcentral",
+            "clinic",
             "sjukhus",
+            "hospital",
             "1177",
             "friskis",
             "satsegym",
             "gym",
             "tandläkare",
             "tandlakare",
+            "dentist",
             "folktandvård",
             "folktandvard",
             "optical",
@@ -173,8 +224,9 @@ DEFAULT_RULES: tuple[tuple[tuple[str, ...], str], ...] = (
             "lensway",
             "kry",
             "doktor24",
+            "doctor",
         ),
-        "Hälsa",
+        "Health",
     ),
     (
         (
@@ -182,12 +234,16 @@ DEFAULT_RULES: tuple[tuple[tuple[str, ...], str], ...] = (
             "coursera",
             "studentlitteratur",
             "kurs",
+            "course",
             "utbildning",
             "skola",
+            "school",
             "universitet",
+            "university",
             "komvux",
             "pluralsight",
+            "tuition",
         ),
-        "Utbildning",
+        "Education",
     ),
 )

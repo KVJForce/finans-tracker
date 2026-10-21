@@ -1,4 +1,4 @@
-"""Huvudapplikation för Finans Tracker."""
+"""Main application for Finance Tracker."""
 
 from __future__ import annotations
 
@@ -21,9 +21,9 @@ from finans_tracker.ui.transactions import TransactionsView
 
 
 class FinansTrackerApp(ctk.CTk):
-    """Huvudfönster för Finans Tracker."""
+    """Main window for Finance Tracker."""
 
-    APP_NAME = "Finans Tracker"
+    APP_NAME = "Finance Tracker"
     MIN_WIDTH = 960
     MIN_HEIGHT = 640
 
@@ -53,7 +53,7 @@ class FinansTrackerApp(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _setup_window(self) -> None:
-        """Konfigurerar huvudfönstret."""
+        """Configures the main window."""
         self.title(f"{self.APP_NAME} v{__version__}")
         self.geometry("1100x720")
         self.minsize(self.MIN_WIDTH, self.MIN_HEIGHT)
@@ -62,7 +62,7 @@ class FinansTrackerApp(ctk.CTk):
         self.configure(fg_color=colors["bg_primary"])
 
     def _build_ui(self) -> None:
-        """Bygger hela gränssnittet."""
+        """Builds the entire interface."""
         colors = self.theme_manager.colors
 
         self.grid_columnconfigure(1, weight=1)
@@ -72,7 +72,7 @@ class FinansTrackerApp(ctk.CTk):
         self._build_content_area(colors)
 
     def _build_sidebar(self, colors: dict[str, str]) -> None:
-        """Bygger sidopanelen med navigation."""
+        """Builds the sidebar with navigation."""
         sidebar = ctk.CTkFrame(
             self, width=220, corner_radius=0,
             fg_color=colors["bg_secondary"],
@@ -95,15 +95,15 @@ class FinansTrackerApp(ctk.CTk):
         ).pack(anchor="w")
 
         ctk.CTkLabel(
-            logo_frame, text="Personlig ekonomi",
+            logo_frame, text="Personal finance",
             font=ctk.CTkFont(size=12),
             text_color=colors["text_secondary"],
         ).pack(anchor="w")
 
         nav_items = [
             ("dashboard", "Dashboard", "📊"),
-            ("transactions", "Transaktioner", "💳"),
-            ("categories", "Kategorier", "🏷"),
+            ("transactions", "Transactions", "💳"),
+            ("categories", "Categories", "🏷"),
         ]
 
         nav_frame = ctk.CTkFrame(sidebar, fg_color="transparent")
@@ -125,7 +125,7 @@ class FinansTrackerApp(ctk.CTk):
         tools_frame.pack(fill="x", padx=12, pady=(0, 8))
 
         ctk.CTkButton(
-            tools_frame, text="📤  Exportera CSV", height=36,
+            tools_frame, text="📤  Export CSV", height=36,
             anchor="w", fg_color="transparent",
             hover_color=colors["sidebar_hover"],
             text_color=colors["text_secondary"],
@@ -133,7 +133,7 @@ class FinansTrackerApp(ctk.CTk):
         ).pack(fill="x", pady=2)
 
         ctk.CTkButton(
-            tools_frame, text="💾  Skapa backup", height=36,
+            tools_frame, text="💾  Create backup", height=36,
             anchor="w", fg_color="transparent",
             hover_color=colors["sidebar_hover"],
             text_color=colors["text_secondary"],
@@ -142,7 +142,7 @@ class FinansTrackerApp(ctk.CTk):
 
         self._theme_btn = ctk.CTkButton(
             tools_frame,
-            text="🌙  Mörkt tema" if self.theme_manager.mode == ThemeMode.DARK else "☀  Ljust tema",
+            text="🌙  Dark theme" if self.theme_manager.mode == ThemeMode.DARK else "☀  Light theme",
             height=36, anchor="w", fg_color="transparent",
             hover_color=colors["sidebar_hover"],
             text_color=colors["text_secondary"],
@@ -158,7 +158,7 @@ class FinansTrackerApp(ctk.CTk):
         version_label.pack(pady=(0, 16))
 
     def _build_content_area(self, colors: dict[str, str]) -> None:
-        """Bygger innehållsområdet med alla vyer."""
+        """Builds the content area with all views."""
         self._content = ctk.CTkFrame(self, fg_color=colors["bg_primary"], corner_radius=0)
         self._content.grid(row=0, column=1, sticky="nsew")
         self._content.grid_columnconfigure(0, weight=1)
@@ -175,29 +175,29 @@ class FinansTrackerApp(ctk.CTk):
         )
 
     def _show_view(self, view_id: str) -> None:
-        """Byter aktiv vy."""
-        for vid, view in self._views.items():
-            if vid == view_id:
+        """Switches the active view."""
+        for key, view in self._views.items():
+            if key == view_id:
                 view.grid(row=0, column=0, sticky="nsew")
                 if hasattr(view, "refresh"):
                     view.refresh()
             else:
                 view.grid_forget()
 
-        for vid, btn in self._sidebar_buttons.items():
-            btn.set_active(vid == view_id)
+        for key, btn in self._sidebar_buttons.items():
+            btn.set_active(key == view_id)
 
         self._current_view = view_id
 
     def _toggle_theme(self) -> None:
-        """Växlar mellan ljust och mörkt tema."""
+        """Toggles between light and dark theme."""
         new_mode = self.theme_manager.toggle()
         self.db.set_setting("theme_mode", new_mode.value)
-        label = "🌙  Mörkt tema" if new_mode == ThemeMode.DARK else "☀  Ljust tema"
+        label = "🌙  Dark theme" if new_mode == ThemeMode.DARK else "☀  Light theme"
         self._theme_btn.configure(text=label)
 
     def _on_theme_change(self, mode: ThemeMode) -> None:
-        """Uppdaterar UI vid temabyte."""
+        """Updates the UI when the theme changes."""
         if not hasattr(self, "_content"):
             return
 
@@ -210,28 +210,28 @@ class FinansTrackerApp(ctk.CTk):
                 view.on_theme_change()
 
     def _export_csv(self) -> None:
-        """Exporterar transaktioner till CSV."""
+        """Exports transactions to CSV."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        default_name = f"transaktioner_{timestamp}.csv"
+        default_name = f"transactions_{timestamp}.csv"
 
         filepath = filedialog.asksaveasfilename(
             parent=self,
-            title="Exportera transaktioner",
+            title="Export transactions",
             defaultextension=".csv",
             initialfile=default_name,
-            filetypes=[("CSV-filer", "*.csv"), ("Alla filer", "*.*")],
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
         )
         if not filepath:
             return
 
         try:
             count = export_transactions_to_csv(self.db, Path(filepath))
-            show_info(self, self.theme_manager, f"{count} transaktioner exporterade till:\n{filepath}")
+            show_info(self, self.theme_manager, f"{count} transactions exported to:\n{filepath}")
         except ExportError as exc:
             show_error(self, self.theme_manager, str(exc))
 
     def _create_backup_on_startup(self) -> None:
-        """Skapar automatisk backup vid uppstart."""
+        """Creates an automatic backup on startup."""
         try:
             last_backup = self.db.get_setting("last_backup", "")
             today = datetime.now().strftime("%Y-%m-%d")
@@ -244,19 +244,19 @@ class FinansTrackerApp(ctk.CTk):
             pass
 
     def _manual_backup(self) -> None:
-        """Skapar manuell backup."""
+        """Creates a manual backup."""
         try:
             backup_path = self.backup_manager.create_backup()
             self.db.set_setting("last_backup", datetime.now().strftime("%Y-%m-%d"))
             show_info(
                 self, self.theme_manager,
-                f"Backup skapad:\n{backup_path}",
+                f"Backup created:\n{backup_path}",
             )
         except (FileNotFoundError, OSError) as exc:
-            show_error(self, self.theme_manager, f"Backup misslyckades: {exc}")
+            show_error(self, self.theme_manager, f"Backup failed: {exc}")
 
     def _on_close(self) -> None:
-        """Hanterar avslutning med backup."""
+        """Handles shutdown with a backup."""
         try:
             self.backup_manager.create_backup()
         except (FileNotFoundError, OSError):
@@ -266,17 +266,17 @@ class FinansTrackerApp(ctk.CTk):
 
 def run_app(data_dir: Optional[Path] = None) -> None:
     """
-    Startar Finans Tracker-applikationen.
+    Starts the Finance Tracker application.
 
     Args:
-        data_dir: Valfri sökväg för datalagring.
+        data_dir: Optional path for data storage.
     """
     app = FinansTrackerApp(data_dir=data_dir)
     app.mainloop()
 
 
 def main() -> None:
-    """Entry point för applikationen."""
+    """Entry point for the application."""
     run_app()
 
 

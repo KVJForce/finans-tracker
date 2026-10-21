@@ -1,1 +1,1 @@
-"""UI-paket för Finans Tracker."""
+"""UI package for Finance Tracker."""

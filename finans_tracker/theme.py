@@ -1,4 +1,4 @@
-"""Temahantering för applikationen."""
+"""Theme management for the application."""
 
 from __future__ import annotations
 
@@ -9,13 +9,13 @@ import customtkinter as ctk
 
 
 class ThemeMode(str, Enum):
-    """Tillgängliga teman."""
+    """Available themes."""
 
     DARK = "dark"
     LIGHT = "light"
 
 
-# Färgpalett per tema
+# Color palette per theme
 THEME_COLORS = {
     ThemeMode.DARK: {
         "bg_primary": "#1a1a2e",
@@ -57,37 +57,37 @@ THEME_COLORS = {
 
 
 class ThemeManager:
-    """Central hantering av ljust/mörkt tema."""
+    """Central management of the light/dark theme."""
 
     SETTING_KEY = "theme_mode"
 
     def __init__(self, on_change: Callable[[ThemeMode], None] | None = None) -> None:
         """
-        Initierar temahanteraren.
+        Initializes the theme manager.
 
         Args:
-            on_change: Callback som anropas vid temabyte.
+            on_change: Callback invoked when the theme changes.
         """
         self._mode = ThemeMode.DARK
         self._on_change = on_change
 
     @property
     def mode(self) -> ThemeMode:
-        """Aktuellt tema."""
+        """Current theme."""
         return self._mode
 
     @property
     def colors(self) -> dict[str, str]:
-        """Färgpalett för aktuellt tema."""
+        """Color palette for the current theme."""
         return THEME_COLORS[self._mode]
 
     def set_mode(self, mode: ThemeMode, notify: bool = True) -> None:
         """
-        Byter tema och uppdaterar CustomTkinter.
+        Switches the theme and updates CustomTkinter.
 
         Args:
-            mode: Nytt tema (dark/light).
-            notify: Om True anropas on_change-callback (stäng av vid init).
+            mode: New theme (dark/light).
+            notify: If True, the on_change callback is invoked (disabled during init).
         """
         self._mode = mode
         ctk.set_appearance_mode(mode.value)
@@ -96,18 +96,18 @@ class ThemeManager:
             self._on_change(mode)
 
     def toggle(self) -> ThemeMode:
-        """Växlar mellan ljust och mörkt tema."""
+        """Toggles between light and dark theme."""
         new_mode = ThemeMode.LIGHT if self._mode == ThemeMode.DARK else ThemeMode.DARK
         self.set_mode(new_mode)
         return new_mode
 
     def load_from_setting(self, value: str, notify: bool = False) -> None:
         """
-        Laddar tema från sparad inställning.
+        Loads the theme from a saved setting.
 
         Args:
-            value: Sparat temavärde ('dark' eller 'light').
-            notify: Om True anropas on_change-callback efter laddning.
+            value: Saved theme value ('dark' or 'light').
+            notify: If True, the on_change callback is invoked after loading.
         """
         try:
             self.set_mode(ThemeMode(value), notify=notify)

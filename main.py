@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Startpunkt för Finans Tracker."""
+"""Entry point for Finance Tracker."""
 
 from finans_tracker.app import main
 

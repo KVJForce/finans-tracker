@@ -1,4 +1,4 @@
-"""Automatisk säkerhetskopiering av databasen."""
+"""Automatic backup of the database."""
 
 from __future__ import annotations
 
@@ -9,17 +9,17 @@ from typing import Optional
 
 
 class BackupManager:
-    """Hanterar automatiska säkerhetskopior av SQLite-databasen."""
+    """Manages automatic backups of the SQLite database."""
 
     MAX_BACKUPS = 10
 
     def __init__(self, db_path: Path, backup_dir: Optional[Path] = None) -> None:
         """
-        Initierar backup-hanteraren.
+        Initializes the backup manager.
 
         Args:
-            db_path: Sökväg till databasfilen.
-            backup_dir: Mapp för backups (standard: data/backups).
+            db_path: Path to the database file.
+            backup_dir: Directory for backups (default: data/backups).
         """
         self.db_path = db_path
         self.backup_dir = backup_dir or db_path.parent / "backups"
@@ -27,17 +27,17 @@ class BackupManager:
 
     def create_backup(self) -> Path:
         """
-        Skapar en tidsstämplad säkerhetskopia.
+        Creates a timestamped backup.
 
         Returns:
-            Sökväg till backup-filen.
+            Path to the backup file.
 
         Raises:
-            FileNotFoundError: Om databasfilen saknas.
-            OSError: Om kopiering misslyckas.
+            FileNotFoundError: If the database file is missing.
+            OSError: If copying fails.
         """
         if not self.db_path.exists():
-            raise FileNotFoundError(f"Databasen hittades inte: {self.db_path}")
+            raise FileNotFoundError(f"Database not found: {self.db_path}")
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_path = self.backup_dir / f"finans_backup_{timestamp}.db"
@@ -46,7 +46,7 @@ class BackupManager:
         return backup_path
 
     def _cleanup_old_backups(self) -> None:
-        """Behåller endast de senaste MAX_BACKUPS kopiorna."""
+        """Keeps only the most recent MAX_BACKUPS copies."""
         backups = sorted(
             self.backup_dir.glob("finans_backup_*.db"),
             key=lambda p: p.stat().st_mtime,
@@ -56,7 +56,7 @@ class BackupManager:
             old_backup.unlink(missing_ok=True)
 
     def list_backups(self) -> list[Path]:
-        """Returnerar alla tillgängliga backups, nyast först."""
+        """Returns all available backups, newest first."""
         return sorted(
             self.backup_dir.glob("finans_backup_*.db"),
             key=lambda p: p.stat().st_mtime,

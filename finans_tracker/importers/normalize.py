@@ -1,4 +1,4 @@
-"""Normalisering av belopp, datum och text vid CSV-import."""
+"""Normalization of amounts, dates, and text for CSV import."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ _DATE_FORMATS = (
 
 
 def _grouped_integer(text: str, separator: str) -> Optional[str]:
-    """Tar bort tusentalsavgränsare om grupperna är tre siffror vardera."""
+    """Removes thousands separators when each group has three digits."""
     parts = text.split(separator)
     if len(parts) < 2 or not parts[0].isdigit():
         return None
@@ -33,23 +33,23 @@ def _grouped_integer(text: str, separator: str) -> Optional[str]:
 
 def parse_amount(raw: str) -> float:
     """
-    Tolkar ett belopp från en bank-CSV.
+    Parses an amount from a bank CSV.
 
-    Stödjer svenska och engelska format, till exempel "1 234,56",
-    "-1.234,56", "1,234.56" och "(1 234,56)".
+    Supports Swedish and English formats, for example "1 234,56",
+    "-1.234,56", "1,234.56", and "(1 234,56)".
 
     Args:
-        raw: Beloppet som text.
+        raw: The amount as text.
 
     Returns:
-        Beloppet som flyttal. Negativa belopp behåller sitt tecken.
+        The amount as a float. Negative amounts keep their sign.
 
     Raises:
-        ValueError: Om beloppet inte kan tolkas.
+        ValueError: If the amount cannot be parsed.
     """
     text = raw.strip().replace("\u00a0", " ").replace("\u2212", "-")
     if not text:
-        raise ValueError("tomt belopp")
+        raise ValueError("empty amount")
 
     negative = text.startswith("(") and text.endswith(")")
     if negative:
@@ -67,7 +67,7 @@ def parse_amount(raw: str) -> float:
         text = text[1:]
 
     if not text:
-        raise ValueError(f"ogiltigt belopp: {raw!r}")
+        raise ValueError(f"invalid amount: {raw!r}")
 
     if "," in text and "." in text:
         if text.rfind(",") > text.rfind("."):
@@ -81,7 +81,7 @@ def parse_amount(raw: str) -> float:
         else:
             grouped = _grouped_integer(text, ",")
             if grouped is None:
-                raise ValueError(f"ogiltigt belopp: {raw!r}")
+                raise ValueError(f"invalid amount: {raw!r}")
             text = grouped
     elif "." in text:
         head, _, tail = text.rpartition(".")
@@ -90,29 +90,29 @@ def parse_amount(raw: str) -> float:
         else:
             grouped = _grouped_integer(text, ".")
             if grouped is None:
-                raise ValueError(f"ogiltigt belopp: {raw!r}")
+                raise ValueError(f"invalid amount: {raw!r}")
             text = grouped
 
     try:
         value = float(text)
     except ValueError as exc:
-        raise ValueError(f"ogiltigt belopp: {raw!r}") from exc
+        raise ValueError(f"invalid amount: {raw!r}") from exc
 
     return -value if negative else value
 
 
 def parse_date(raw: str) -> date:
     """
-    Tolkar ett datum från en bank-CSV.
+    Parses a date from a bank CSV.
 
     Args:
-        raw: Datumet som text.
+        raw: The date as text.
 
     Returns:
-        Datumet.
+        The date.
 
     Raises:
-        ValueError: Om datumet inte matchar något känt format.
+        ValueError: If the date does not match any known format.
     """
     text = raw.strip()
     for fmt in _DATE_FORMATS:
@@ -120,19 +120,19 @@ def parse_date(raw: str) -> date:
             return datetime.strptime(text, fmt).date()
         except ValueError:
             continue
-    raise ValueError(f"ogiltigt datum: {raw!r}")
+    raise ValueError(f"invalid date: {raw!r}")
 
 
 def clean_description(raw: str) -> str:
-    """Tar bort extra blanksteg och radbrytningar från en beskrivning."""
+    """Removes extra whitespace and line breaks from a description."""
     return " ".join(raw.split())
 
 
 def fold_text(value: str) -> str:
     """
-    Normaliserar text för sökning: gemener och utan diakriter.
+    Normalizes text for searching: lowercase and without diacritics.
 
-    Exempel: "Hemköp" blir "hemkop".
+    Example: "Hemköp" becomes "hemkop".
     """
     decomposed = unicodedata.normalize("NFKD", value)
     without_marks = "".join(
