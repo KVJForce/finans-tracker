@@ -9,10 +9,15 @@ import customtkinter as ctk
 
 from finans_tracker.database import Database, DatabaseError
 from finans_tracker.models import CategoryType, Transaction, TransactionType
-from finans_tracker.theme import ThemeManager
+from finans_tracker.theme import ThemeManager, ui_font
 from finans_tracker.ui.components import (
     ConfirmDialog,
     format_currency,
+    ghost_button,
+    paper_entry,
+    paper_menu,
+    primary_button,
+    row_action_button,
     show_error,
 )
 from finans_tracker.ui.import_dialog import ImportDialog
@@ -39,74 +44,84 @@ class TransactionDialog(ctk.CTkToplevel):
 
         is_edit = transaction is not None
         self.title("Edit transaction" if is_edit else "New transaction")
-        self.geometry("480x520")
+        self.geometry("480x560")
         self.resizable(False, False)
         self.transient(master)
         self.grab_set()
+        self.configure(fg_color=colors["bg_card"])
 
         form = ctk.CTkFrame(self, fg_color="transparent")
-        form.pack(fill="both", expand=True, padx=24, pady=24)
+        form.pack(fill="both", expand=True, padx=28, pady=26)
+
+        ctk.CTkLabel(
+            form,
+            text="Edit transaction" if is_edit else "New transaction",
+            font=ui_font(18, "bold"),
+            text_color=colors["text_primary"],
+        ).pack(anchor="w", pady=(0, 18))
 
         # Type
         ctk.CTkLabel(
-            form, text="Type", font=ctk.CTkFont(size=13, weight="bold"),
+            form, text="TYPE", font=ui_font(11, "bold"),
             text_color=colors["text_secondary"],
-        ).pack(anchor="w", pady=(0, 4))
+        ).pack(anchor="w", pady=(0, 6))
 
         self._type_var = ctk.StringVar(
             value=transaction.transaction_type.value if transaction else "expense"
         )
         type_frame = ctk.CTkFrame(form, fg_color="transparent")
-        type_frame.pack(fill="x", pady=(0, 12))
+        type_frame.pack(fill="x", pady=(0, 16))
 
         ctk.CTkRadioButton(
             type_frame, text="Expense", variable=self._type_var, value="expense",
             command=self._on_type_change,
+            font=ui_font(13),
+            fg_color=colors["accent"], border_color=colors["border"],
+            hover_color=colors["accent_hover"],
             text_color=colors["text_primary"],
-        ).pack(side="left", padx=(0, 16))
+        ).pack(side="left", padx=(0, 18))
 
         ctk.CTkRadioButton(
             type_frame, text="Income", variable=self._type_var, value="income",
             command=self._on_type_change,
+            font=ui_font(13),
+            fg_color=colors["accent"], border_color=colors["border"],
+            hover_color=colors["accent_hover"],
             text_color=colors["text_primary"],
         ).pack(side="left")
 
         # Amount
         ctk.CTkLabel(
-            form, text="Amount (kr)", font=ctk.CTkFont(size=13, weight="bold"),
+            form, text="AMOUNT (KR)", font=ui_font(11, "bold"),
             text_color=colors["text_secondary"],
-        ).pack(anchor="w", pady=(0, 4))
+        ).pack(anchor="w", pady=(0, 6))
 
-        self._amount_entry = ctk.CTkEntry(
-            form, placeholder_text="0,00", height=40,
-        )
-        self._amount_entry.pack(fill="x", pady=(0, 12))
+        self._amount_entry = paper_entry(form, theme, placeholder_text="0,00")
+        self._amount_entry.pack(fill="x", pady=(0, 16))
         if transaction:
             self._amount_entry.insert(0, f"{transaction.amount:.2f}".replace(".", ","))
 
         # Category
         ctk.CTkLabel(
-            form, text="Category", font=ctk.CTkFont(size=13, weight="bold"),
+            form, text="CATEGORY", font=ui_font(11, "bold"),
             text_color=colors["text_secondary"],
-        ).pack(anchor="w", pady=(0, 4))
+        ).pack(anchor="w", pady=(0, 6))
 
         self._category_var = ctk.StringVar()
-        self._category_menu = ctk.CTkOptionMenu(
-            form, variable=self._category_var, height=40, values=["Loading..."],
+        self._category_menu = paper_menu(
+            form, theme, variable=self._category_var, values=["Loading..."],
         )
-        self._category_menu.pack(fill="x", pady=(0, 12))
+        self._category_menu.pack(fill="x", pady=(0, 16))
         self._category_map: dict[str, int] = {}
 
         # Date
         ctk.CTkLabel(
-            form, text="Date (YYYY-MM-DD)", font=ctk.CTkFont(size=13, weight="bold"),
+            form, text="DATE (YYYY-MM-DD)", font=ui_font(11, "bold"),
             text_color=colors["text_secondary"],
-        ).pack(anchor="w", pady=(0, 4))
+        ).pack(anchor="w", pady=(0, 6))
 
-        self._date_entry = ctk.CTkEntry(
-            form, placeholder_text="2026-01-15", height=40,
-        )
-        self._date_entry.pack(fill="x", pady=(0, 12))
+        self._date_entry = paper_entry(form, theme, placeholder_text="2026-01-15")
+        self._date_entry.pack(fill="x", pady=(0, 16))
         if transaction:
             self._date_entry.insert(0, transaction.transaction_date.isoformat())
         else:
@@ -114,14 +129,14 @@ class TransactionDialog(ctk.CTkToplevel):
 
         # Description
         ctk.CTkLabel(
-            form, text="Description", font=ctk.CTkFont(size=13, weight="bold"),
+            form, text="DESCRIPTION", font=ui_font(11, "bold"),
             text_color=colors["text_secondary"],
-        ).pack(anchor="w", pady=(0, 4))
+        ).pack(anchor="w", pady=(0, 6))
 
-        self._desc_entry = ctk.CTkEntry(
-            form, placeholder_text="What is this transaction for?", height=40,
+        self._desc_entry = paper_entry(
+            form, theme, placeholder_text="What is this transaction for?",
         )
-        self._desc_entry.pack(fill="x", pady=(0, 20))
+        self._desc_entry.pack(fill="x", pady=(0, 22))
         if transaction:
             self._desc_entry.insert(0, transaction.description)
 
@@ -129,17 +144,12 @@ class TransactionDialog(ctk.CTkToplevel):
         btn_frame = ctk.CTkFrame(form, fg_color="transparent")
         btn_frame.pack(fill="x")
 
-        ctk.CTkButton(
-            btn_frame, text="Cancel", width=100, height=40,
-            fg_color="transparent", border_width=1, border_color=colors["border"],
-            text_color=colors["text_primary"], hover_color=colors["sidebar_hover"],
-            command=self.destroy,
+        ghost_button(
+            btn_frame, theme, "Cancel", self.destroy, width=104, height=38,
         ).pack(side="left")
 
-        ctk.CTkButton(
-            btn_frame, text="Save", width=120, height=40,
-            fg_color=colors["accent"], hover_color=colors["accent_hover"],
-            command=self._save,
+        primary_button(
+            btn_frame, theme, "Save", self._save, width=124, height=38,
         ).pack(side="right")
 
         self._load_categories()
@@ -241,77 +251,87 @@ class TransactionsView(ctk.CTkFrame):
     def _build_ui(self, colors: dict[str, str]) -> None:
         """Builds the transactions layout."""
         header = ctk.CTkFrame(self, fg_color="transparent")
-        header.pack(fill="x", padx=24, pady=(24, 16))
+        header.pack(fill="x", padx=28, pady=(26, 16))
 
         ctk.CTkLabel(
             header, text="Transactions",
-            font=ctk.CTkFont(size=28, weight="bold"),
+            font=ui_font(24, "bold"),
             text_color=colors["text_primary"],
         ).pack(side="left")
 
-        ctk.CTkButton(
-            header, text="+ New transaction", height=40,
-            fg_color=colors["accent"], hover_color=colors["accent_hover"],
-            command=self._open_add_dialog,
+        primary_button(
+            header, self.theme, "+ New transaction",
+            self._open_add_dialog, width=156,
         ).pack(side="right")
 
-        ctk.CTkButton(
-            header, text="Import CSV", height=40, width=130,
-            fg_color="transparent", border_width=1, border_color=colors["border"],
-            text_color=colors["text_primary"], hover_color=colors["sidebar_hover"],
-            command=self._open_import_dialog,
-        ).pack(side="right", padx=(0, 8))
+        ghost_button(
+            header, self.theme, "Import CSV",
+            self._open_import_dialog, width=120,
+        ).pack(side="right", padx=(0, 10))
 
-        # Filter
+        # Filters
         filter_frame = ctk.CTkFrame(
-            self, fg_color=colors["bg_card"], corner_radius=12,
+            self, fg_color=colors["bg_card"], corner_radius=10,
             border_width=1, border_color=colors["border"],
         )
-        filter_frame.pack(fill="x", padx=24, pady=(0, 12))
+        filter_frame.pack(fill="x", padx=28, pady=(0, 14))
 
         filter_inner = ctk.CTkFrame(filter_frame, fg_color="transparent")
         filter_inner.pack(fill="x", padx=16, pady=12)
 
         ctk.CTkLabel(
-            filter_inner, text="From:", text_color=colors["text_secondary"],
-        ).pack(side="left", padx=(0, 4))
-        self._date_from = ctk.CTkEntry(filter_inner, width=110, placeholder_text="YYYY-MM-DD")
-        self._date_from.pack(side="left", padx=(0, 12))
+            filter_inner, text="From", font=ui_font(12),
+            text_color=colors["text_secondary"],
+        ).pack(side="left", padx=(0, 6))
 
-        ctk.CTkLabel(
-            filter_inner, text="To:", text_color=colors["text_secondary"],
-        ).pack(side="left", padx=(0, 4))
-        self._date_to = ctk.CTkEntry(filter_inner, width=110, placeholder_text="YYYY-MM-DD")
-        self._date_to.pack(side="left", padx=(0, 12))
-
-        ctk.CTkLabel(
-            filter_inner, text="Category:", text_color=colors["text_secondary"],
-        ).pack(side="left", padx=(0, 4))
-        self._filter_category_var = ctk.StringVar(value="All")
-        self._filter_category = ctk.CTkOptionMenu(
-            filter_inner, variable=self._filter_category_var, width=140, values=["All"],
+        self._date_from = paper_entry(
+            filter_inner, self.theme, width=112, height=32,
+            placeholder_text="YYYY-MM-DD",
         )
-        self._filter_category.pack(side="left", padx=(0, 12))
+        self._date_from.pack(side="left", padx=(0, 14))
 
-        ctk.CTkButton(
-            filter_inner, text="Filter", width=90, height=32,
-            fg_color=colors["accent"], hover_color=colors["accent_hover"],
-            command=self.refresh,
+        ctk.CTkLabel(
+            filter_inner, text="To", font=ui_font(12),
+            text_color=colors["text_secondary"],
+        ).pack(side="left", padx=(0, 6))
+
+        self._date_to = paper_entry(
+            filter_inner, self.theme, width=112, height=32,
+            placeholder_text="YYYY-MM-DD",
+        )
+        self._date_to.pack(side="left", padx=(0, 14))
+
+        ctk.CTkLabel(
+            filter_inner, text="Category", font=ui_font(12),
+            text_color=colors["text_secondary"],
+        ).pack(side="left", padx=(0, 6))
+
+        self._filter_category_var = ctk.StringVar(value="All")
+        self._filter_category = paper_menu(
+            filter_inner, self.theme,
+            variable=self._filter_category_var, values=["All"],
+            width=150, height=32,
+        )
+        self._filter_category.pack(side="left", padx=(0, 14))
+
+        primary_button(
+            filter_inner, self.theme, "Filter", self.refresh,
+            width=88, height=32,
         ).pack(side="left", padx=(0, 8))
 
-        ctk.CTkButton(
-            filter_inner, text="Clear", width=70, height=32,
-            fg_color="transparent", border_width=1, border_color=colors["border"],
-            text_color=colors["text_primary"], hover_color=colors["sidebar_hover"],
-            command=self._clear_filters,
+        ghost_button(
+            filter_inner, self.theme, "Clear", self._clear_filters,
+            width=76, height=32,
         ).pack(side="left")
 
         # List
         self._list_container = ctk.CTkScrollableFrame(
-            self, fg_color=colors["bg_card"], corner_radius=12,
+            self, fg_color=colors["bg_card"], corner_radius=10,
             border_width=1, border_color=colors["border"],
+            scrollbar_button_color=colors["border"],
+            scrollbar_button_hover_color=colors["text_muted"],
         )
-        self._list_container.pack(fill="both", expand=True, padx=24, pady=(0, 24))
+        self._list_container.pack(fill="both", expand=True, padx=28, pady=(0, 26))
 
         self._update_filter_categories()
 
@@ -377,10 +397,10 @@ class TransactionsView(ctk.CTkFrame):
             empty = ctk.CTkLabel(
                 self._list_container,
                 text="No transactions found",
-                font=ctk.CTkFont(size=14),
+                font=ui_font(13),
                 text_color=colors["text_muted"],
             )
-            empty.pack(pady=40)
+            empty.pack(pady=48)
             self._rows.append(empty)
             return
 
@@ -394,52 +414,48 @@ class TransactionsView(ctk.CTkFrame):
         amount_color = colors["success"] if is_income else colors["danger"]
         prefix = "+" if is_income else "-"
 
-        row = ctk.CTkFrame(self._list_container, fg_color="transparent", height=56)
-        row.pack(fill="x", padx=8, pady=2)
+        row = ctk.CTkFrame(self._list_container, fg_color="transparent", height=58)
+        row.pack(fill="x", padx=8, pady=1)
         row.pack_propagate(False)
 
         color_dot = ctk.CTkFrame(
             row, width=8, height=8, corner_radius=4,
             fg_color=tx.category_color or colors["accent"],
         )
-        color_dot.pack(side="left", padx=(12, 8), pady=20)
+        color_dot.pack(side="left", padx=(14, 10), pady=25)
 
         info_frame = ctk.CTkFrame(row, fg_color="transparent")
-        info_frame.pack(side="left", fill="both", expand=True, pady=8)
+        info_frame.pack(side="left", fill="both", expand=True, pady=10)
 
         ctk.CTkLabel(
             info_frame, text=tx.description,
-            font=ctk.CTkFont(size=14, weight="bold"),
+            font=ui_font(13, "bold"),
             text_color=colors["text_primary"], anchor="w",
         ).pack(anchor="w")
 
         meta = f"{tx.category_name}  ·  {tx.transaction_date.isoformat()}"
         ctk.CTkLabel(
-            info_frame, text=meta, font=ctk.CTkFont(size=12),
+            info_frame, text=meta, font=ui_font(12),
             text_color=colors["text_secondary"], anchor="w",
         ).pack(anchor="w")
 
+        row_action_button(
+            row, self.theme, "Delete",
+            lambda t=tx: self._confirm_delete(t), danger=True,
+        ).pack(side="right", padx=(0, 10))
+
+        row_action_button(
+            row, self.theme, "Edit",
+            lambda t=tx: self._open_edit_dialog(t),
+        ).pack(side="right", padx=(0, 2))
+
         ctk.CTkLabel(
             row, text=f"{prefix}{format_currency(tx.amount)}",
-            font=ctk.CTkFont(size=15, weight="bold"),
+            font=ui_font(14, "bold"),
             text_color=amount_color,
-        ).pack(side="right", padx=(8, 4))
+        ).pack(side="right", padx=10)
 
-        ctk.CTkButton(
-            row, text="✎", width=32, height=32,
-            fg_color="transparent", hover_color=colors["sidebar_hover"],
-            text_color=colors["text_secondary"],
-            command=lambda t=tx: self._open_edit_dialog(t),
-        ).pack(side="right", padx=2)
-
-        ctk.CTkButton(
-            row, text="✕", width=32, height=32,
-            fg_color="transparent", hover_color=colors["danger"],
-            text_color=colors["text_secondary"],
-            command=lambda t=tx: self._confirm_delete(t),
-        ).pack(side="right", padx=2)
-
-        separator = ctk.CTkFrame(row, height=1, fg_color=colors["border"])
+        separator = ctk.CTkFrame(row, height=1, fg_color=colors["hairline"])
         separator.place(relx=0, rely=1, relwidth=1)
 
         return row
@@ -483,5 +499,9 @@ class TransactionsView(ctk.CTkFrame):
             show_error(self.root, self.theme, str(exc))
 
     def on_theme_change(self) -> None:
-        """Refreshes the view when the theme changes."""
+        """Rebuilds the view when the theme changes."""
+        for child in self.winfo_children():
+            child.destroy()
+        self._rows.clear()
+        self._build_ui(self.theme.colors)
         self.refresh()

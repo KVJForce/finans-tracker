@@ -16,8 +16,15 @@ from finans_tracker.importers import (
     load_import,
 )
 from finans_tracker.models import Category, CategoryType, TransactionType
-from finans_tracker.theme import ThemeManager
-from finans_tracker.ui.components import format_currency, show_error, show_info
+from finans_tracker.theme import ThemeManager, style_treeview, ui_font
+from finans_tracker.ui.components import (
+    format_currency,
+    ghost_button,
+    paper_menu,
+    primary_button,
+    show_error,
+    show_info,
+)
 
 
 class CategoryPicker(ctk.CTkToplevel):
@@ -38,39 +45,37 @@ class CategoryPicker(ctk.CTkToplevel):
         self._names = [category.name for category in categories]
 
         self.title("Change category")
-        self.geometry("400x230")
+        self.geometry("420x260")
         self.resizable(False, False)
         self.transient(master)
         self.grab_set()
+        self.configure(fg_color=colors["bg_card"])
 
         ctk.CTkLabel(
-            self, text=description, wraplength=340,
-            font=ctk.CTkFont(size=13),
+            self, text="Change category",
+            font=ui_font(16, "bold"),
+            text_color=colors["text_primary"],
+        ).pack(anchor="w", padx=26, pady=(24, 6))
+
+        ctk.CTkLabel(
+            self, text=description, wraplength=360,
+            font=ui_font(13),
             text_color=colors["text_secondary"],
-        ).pack(padx=24, pady=(24, 8))
+            justify="left", anchor="w",
+        ).pack(anchor="w", padx=26, pady=(0, 14))
 
         self._var = ctk.StringVar(
             value=current if current in self._names else self._names[0]
         )
-        ctk.CTkOptionMenu(
-            self, variable=self._var, values=self._names, height=40,
-        ).pack(fill="x", padx=24, pady=(0, 20))
+        paper_menu(
+            self, theme, variable=self._var, values=self._names,
+        ).pack(fill="x", padx=26, pady=(0, 20))
 
         buttons = ctk.CTkFrame(self, fg_color="transparent")
-        buttons.pack(fill="x", padx=24)
+        buttons.pack(fill="x", padx=26)
 
-        ctk.CTkButton(
-            buttons, text="Cancel", width=100, height=36,
-            fg_color="transparent", border_width=1,
-            border_color=colors["border"], text_color=colors["text_primary"],
-            hover_color=colors["sidebar_hover"], command=self.destroy,
-        ).pack(side="left")
-
-        ctk.CTkButton(
-            buttons, text="Save", width=110, height=36,
-            fg_color=colors["accent"], hover_color=colors["accent_hover"],
-            command=self._save,
-        ).pack(side="right")
+        ghost_button(buttons, theme, "Cancel", self.destroy, width=104).pack(side="left")
+        primary_button(buttons, theme, "Save", self._save, width=112).pack(side="right")
 
         self.update_idletasks()
         x = master.winfo_x() + (master.winfo_width() - self.winfo_width()) // 2
@@ -119,50 +124,49 @@ class ImportDialog(ctk.CTkToplevel):
     def _build_ui(self, colors: dict[str, str]) -> None:
         """Builds the dialog layout."""
         container = ctk.CTkFrame(self, fg_color="transparent")
-        container.pack(fill="both", expand=True, padx=24, pady=24)
+        container.pack(fill="both", expand=True, padx=28, pady=26)
 
         ctk.CTkLabel(
             container, text="Import bank CSV",
-            font=ctk.CTkFont(size=24, weight="bold"),
+            font=ui_font(22, "bold"),
             text_color=colors["text_primary"],
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             container,
             text="Choose a CSV export from your bank. Duplicates are skipped automatically.",
-            font=ctk.CTkFont(size=13),
+            font=ui_font(13),
             text_color=colors["text_secondary"],
-        ).pack(anchor="w", pady=(2, 16))
+        ).pack(anchor="w", pady=(4, 18))
 
         file_row = ctk.CTkFrame(container, fg_color="transparent")
-        file_row.pack(fill="x", pady=(0, 12))
+        file_row.pack(fill="x", pady=(0, 14))
 
-        ctk.CTkButton(
-            file_row, text="Choose file...", width=120, height=38,
-            fg_color=colors["accent"], hover_color=colors["accent_hover"],
-            command=self._choose_file,
+        primary_button(
+            file_row, self.theme, "Choose file...",
+            self._choose_file, width=132,
         ).pack(side="left")
 
         file_info = ctk.CTkFrame(file_row, fg_color="transparent")
-        file_info.pack(side="left", padx=12)
+        file_info.pack(side="left", padx=14)
 
         self._file_label = ctk.CTkLabel(
             file_info, text="No file selected",
-            font=ctk.CTkFont(size=14, weight="bold"),
+            font=ui_font(13, "bold"),
             text_color=colors["text_primary"], anchor="w",
         )
         self._file_label.pack(anchor="w")
 
         self._meta_label = ctk.CTkLabel(
             file_info, text="",
-            font=ctk.CTkFont(size=11),
+            font=ui_font(11),
             text_color=colors["text_muted"], anchor="w",
             wraplength=680, justify="left",
         )
         self._meta_label.pack(anchor="w")
 
         summary = ctk.CTkFrame(container, fg_color="transparent")
-        summary.pack(fill="x", pady=(0, 8))
+        summary.pack(fill="x", pady=(0, 10))
 
         self._rows_label = self._summary_label(summary, colors, "0 rows")
         self._duplicates_label = self._summary_label(
@@ -173,14 +177,15 @@ class ImportDialog(ctk.CTkToplevel):
         )
 
         tree_frame = ctk.CTkFrame(
-            container, fg_color=colors["bg_card"], corner_radius=12,
+            container, fg_color=colors["bg_card"], corner_radius=10,
             border_width=1, border_color=colors["border"],
         )
         tree_frame.pack(fill="both", expand=True)
         tree_frame.grid_rowconfigure(0, weight=1)
         tree_frame.grid_columnconfigure(0, weight=1)
 
-        self._style_tree(colors)
+        style_treeview(ttk.Style(self), "Import.Treeview", colors)
+
         self._tree = ttk.Treeview(
             tree_frame,
             columns=("date", "description", "type", "amount", "category"),
@@ -206,7 +211,8 @@ class ImportDialog(ctk.CTkToplevel):
 
         scrollbar = ctk.CTkScrollbar(
             tree_frame, command=self._tree.yview,
-            button_color=colors["border"], button_hover_color=colors["accent"],
+            button_color=colors["border"],
+            button_hover_color=colors["text_muted"],
         )
         self._tree.configure(yscrollcommand=scrollbar.set)
 
@@ -217,7 +223,7 @@ class ImportDialog(ctk.CTkToplevel):
 
         self._warning_label = ctk.CTkLabel(
             container, text="", wraplength=900, justify="left",
-            font=ctk.CTkFont(size=12),
+            font=ui_font(12),
             text_color=colors["warning"], anchor="w",
         )
         self._warning_label.pack(fill="x", pady=(8, 0))
@@ -228,23 +234,19 @@ class ImportDialog(ctk.CTkToplevel):
         ctk.CTkLabel(
             footer,
             text="Double-click a row to change its category.",
-            font=ctk.CTkFont(size=12),
+            font=ui_font(12),
             text_color=colors["text_muted"],
         ).pack(side="left")
 
-        self._import_btn = ctk.CTkButton(
-            footer, text="Import", width=180, height=40,
-            fg_color=colors["accent"], hover_color=colors["accent_hover"],
-            state="disabled", command=self._import,
+        self._import_btn = primary_button(
+            footer, self.theme, "Import", self._import,
+            width=160, state="disabled",
         )
         self._import_btn.pack(side="right")
 
-        ctk.CTkButton(
-            footer, text="Cancel", width=100, height=40,
-            fg_color="transparent", border_width=1,
-            border_color=colors["border"], text_color=colors["text_primary"],
-            hover_color=colors["sidebar_hover"], command=self.destroy,
-        ).pack(side="right", padx=(0, 8))
+        ghost_button(
+            footer, self.theme, "Cancel", self.destroy, width=104,
+        ).pack(side="right", padx=(0, 10))
 
     @staticmethod
     def _summary_label(
@@ -256,41 +258,11 @@ class ImportDialog(ctk.CTkToplevel):
         """Creates a label in the summary row."""
         label = ctk.CTkLabel(
             master, text=text,
-            font=ctk.CTkFont(size=13, weight="bold"),
+            font=ui_font(12, "bold"),
             text_color=color or colors["text_secondary"],
         )
         label.pack(side="left", padx=(0, 18))
         return label
-
-    def _style_tree(self, colors: dict[str, str]) -> None:
-        """Styles the ttk tree to match the app theme."""
-        style = ttk.Style(self)
-        try:
-            style.theme_use("clam")
-        except Exception:
-            pass
-
-        style.configure(
-            "Import.Treeview",
-            background=colors["bg_card"],
-            fieldbackground=colors["bg_card"],
-            foreground=colors["text_primary"],
-            borderwidth=0,
-            rowheight=30,
-            font=("Segoe UI", 10),
-        )
-        style.configure(
-            "Import.Treeview.Heading",
-            background=colors["bg_secondary"],
-            foreground=colors["text_secondary"],
-            relief="flat",
-            font=("Segoe UI", 9, "bold"),
-        )
-        style.map(
-            "Import.Treeview",
-            background=[("selected", colors["sidebar_hover"])],
-            foreground=[("selected", colors["text_primary"])],
-        )
 
     def _choose_file(self) -> None:
         """Opens the file chooser and reads the selected file."""

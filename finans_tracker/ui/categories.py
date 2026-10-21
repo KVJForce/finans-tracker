@@ -8,14 +8,21 @@ import customtkinter as ctk
 
 from finans_tracker.database import Database, DatabaseError
 from finans_tracker.models import Category, CategoryType
-from finans_tracker.theme import ThemeManager
-from finans_tracker.ui.components import ConfirmDialog, show_error
+from finans_tracker.theme import ThemeManager, ui_font
+from finans_tracker.ui.components import (
+    ConfirmDialog,
+    ghost_button,
+    paper_entry,
+    primary_button,
+    row_action_button,
+    show_error,
+)
 
 
 PRESET_COLORS = [
-    "#e74c3c", "#e67e22", "#f39c12", "#2ecc71", "#27ae60",
-    "#1abc9c", "#3498db", "#2980b9", "#9b59b6", "#8e44ad",
-    "#e94560", "#6c5ce7", "#00b894", "#fdcb6e", "#636e72",
+    "#1F7A4D", "#2F8B69", "#35766E", "#587F5A", "#7C9440",
+    "#46587A", "#5A6FA8", "#3E7F8C", "#7A5C8E", "#A87C2E",
+    "#B4543C", "#8A4E5C", "#8C6E4F", "#9A9A94", "#1F1F1D",
 ]
 
 
@@ -26,7 +33,7 @@ class ColorPicker(ctk.CTkFrame):
         self,
         master: ctk.CTkBaseClass,
         theme: ThemeManager,
-        initial_color: str = "#3498db",
+        initial_color: str = "#1F7A4D",
         **kwargs,
     ) -> None:
         super().__init__(master, fg_color="transparent", **kwargs)
@@ -38,14 +45,14 @@ class ColorPicker(ctk.CTkFrame):
         for i, color in enumerate(PRESET_COLORS):
             if i % 5 == 0:
                 row_frame = ctk.CTkFrame(self, fg_color="transparent")
-                row_frame.pack(fill="x", pady=2)
+                row_frame.pack(fill="x", pady=3)
             btn = ctk.CTkButton(
-                row_frame, text="", width=36, height=36,
+                row_frame, text="", width=32, height=32,
                 fg_color=color, hover_color=color,
-                corner_radius=18,
+                corner_radius=16,
                 command=lambda c=color: self._select(c),
             )
-            btn.pack(side="left", padx=3)
+            btn.pack(side="left", padx=4)
             self._buttons.append(btn)
 
         self._select(initial_color)
@@ -56,7 +63,7 @@ class ColorPicker(ctk.CTkFrame):
         for btn in self._buttons:
             btn_color = btn.cget("fg_color")
             btn.configure(
-                border_width=3 if btn_color == color else 0,
+                border_width=2 if btn_color == color else 0,
                 border_color=self.theme.colors["text_primary"],
             )
 
@@ -86,66 +93,72 @@ class CategoryDialog(ctk.CTkToplevel):
 
         is_edit = category is not None
         self.title("Edit category" if is_edit else "New category")
-        self.geometry("440x480")
+        self.geometry("460x520")
         self.resizable(False, False)
         self.transient(master)
         self.grab_set()
+        self.configure(fg_color=colors["bg_card"])
 
         form = ctk.CTkFrame(self, fg_color="transparent")
-        form.pack(fill="both", expand=True, padx=24, pady=24)
+        form.pack(fill="both", expand=True, padx=28, pady=26)
 
         ctk.CTkLabel(
-            form, text="Name", font=ctk.CTkFont(size=13, weight="bold"),
-            text_color=colors["text_secondary"],
-        ).pack(anchor="w", pady=(0, 4))
+            form,
+            text="Edit category" if is_edit else "New category",
+            font=ui_font(18, "bold"),
+            text_color=colors["text_primary"],
+        ).pack(anchor="w", pady=(0, 18))
 
-        self._name_entry = ctk.CTkEntry(form, height=40, placeholder_text="Category name")
-        self._name_entry.pack(fill="x", pady=(0, 12))
+        ctk.CTkLabel(
+            form, text="NAME", font=ui_font(11, "bold"),
+            text_color=colors["text_secondary"],
+        ).pack(anchor="w", pady=(0, 6))
+
+        self._name_entry = paper_entry(form, theme, placeholder_text="Category name")
+        self._name_entry.pack(fill="x", pady=(0, 16))
         if category:
             self._name_entry.insert(0, category.name)
 
         ctk.CTkLabel(
-            form, text="Type", font=ctk.CTkFont(size=13, weight="bold"),
+            form, text="TYPE", font=ui_font(11, "bold"),
             text_color=colors["text_secondary"],
-        ).pack(anchor="w", pady=(0, 4))
+        ).pack(anchor="w", pady=(0, 6))
 
         self._type_var = ctk.StringVar(
             value=category.category_type.value if category else "expense"
         )
         type_frame = ctk.CTkFrame(form, fg_color="transparent")
-        type_frame.pack(fill="x", pady=(0, 12))
+        type_frame.pack(fill="x", pady=(0, 16))
 
         for label, value in [("Expense", "expense"), ("Income", "income"), ("Both", "both")]:
             ctk.CTkRadioButton(
                 type_frame, text=label, variable=self._type_var, value=value,
+                font=ui_font(13),
+                fg_color=colors["accent"], border_color=colors["border"],
+                hover_color=colors["accent_hover"],
                 text_color=colors["text_primary"],
-            ).pack(side="left", padx=(0, 12))
+            ).pack(side="left", padx=(0, 16))
 
         ctk.CTkLabel(
-            form, text="Color", font=ctk.CTkFont(size=13, weight="bold"),
+            form, text="COLOR", font=ui_font(11, "bold"),
             text_color=colors["text_secondary"],
-        ).pack(anchor="w", pady=(0, 4))
+        ).pack(anchor="w", pady=(0, 6))
 
         self._color_picker = ColorPicker(
             form, theme,
-            initial_color=category.color if category else "#3498db",
+            initial_color=category.color if category else PRESET_COLORS[0],
         )
-        self._color_picker.pack(fill="x", pady=(0, 20))
+        self._color_picker.pack(fill="x", pady=(0, 22))
 
         btn_frame = ctk.CTkFrame(form, fg_color="transparent")
         btn_frame.pack(fill="x")
 
-        ctk.CTkButton(
-            btn_frame, text="Cancel", width=100, height=40,
-            fg_color="transparent", border_width=1, border_color=colors["border"],
-            text_color=colors["text_primary"], hover_color=colors["sidebar_hover"],
-            command=self.destroy,
+        ghost_button(
+            btn_frame, theme, "Cancel", self.destroy, width=104, height=38,
         ).pack(side="left")
 
-        ctk.CTkButton(
-            btn_frame, text="Save", width=120, height=40,
-            fg_color=colors["accent"], hover_color=colors["accent_hover"],
-            command=self._save,
+        primary_button(
+            btn_frame, theme, "Save", self._save, width=124, height=38,
         ).pack(side="right")
 
         self.update_idletasks()
@@ -202,25 +215,26 @@ class CategoriesView(ctk.CTkFrame):
     def _build_ui(self, colors: dict[str, str]) -> None:
         """Builds the categories layout."""
         header = ctk.CTkFrame(self, fg_color="transparent")
-        header.pack(fill="x", padx=24, pady=(24, 16))
+        header.pack(fill="x", padx=28, pady=(26, 16))
 
         ctk.CTkLabel(
             header, text="Categories",
-            font=ctk.CTkFont(size=28, weight="bold"),
+            font=ui_font(24, "bold"),
             text_color=colors["text_primary"],
         ).pack(side="left")
 
-        ctk.CTkButton(
-            header, text="+ New category", height=40,
-            fg_color=colors["accent"], hover_color=colors["accent_hover"],
-            command=self._open_add_dialog,
+        primary_button(
+            header, self.theme, "+ New category",
+            self._open_add_dialog, width=150,
         ).pack(side="right")
 
         self._list_container = ctk.CTkScrollableFrame(
-            self, fg_color=colors["bg_card"], corner_radius=12,
+            self, fg_color=colors["bg_card"], corner_radius=10,
             border_width=1, border_color=colors["border"],
+            scrollbar_button_color=colors["border"],
+            scrollbar_button_hover_color=colors["text_muted"],
         )
-        self._list_container.pack(fill="both", expand=True, padx=24, pady=(0, 24))
+        self._list_container.pack(fill="both", expand=True, padx=28, pady=(0, 26))
 
     def refresh(self) -> None:
         """Reloads the category list."""
@@ -234,10 +248,10 @@ class CategoriesView(ctk.CTkFrame):
             empty = ctk.CTkLabel(
                 self._list_container,
                 text="No categories",
-                font=ctk.CTkFont(size=14),
+                font=ui_font(13),
                 text_color=colors["text_muted"],
             )
-            empty.pack(pady=40)
+            empty.pack(pady=48)
             self._rows.append(empty)
             return
 
@@ -248,51 +262,53 @@ class CategoriesView(ctk.CTkFrame):
         """Creates a row in the category list."""
         colors = self.theme.colors
 
-        row = ctk.CTkFrame(self._list_container, fg_color="transparent", height=56)
-        row.pack(fill="x", padx=8, pady=2)
+        row = ctk.CTkFrame(self._list_container, fg_color="transparent", height=58)
+        row.pack(fill="x", padx=8, pady=1)
         row.pack_propagate(False)
 
         color_indicator = ctk.CTkFrame(
-            row, width=24, height=24, corner_radius=12, fg_color=cat.color,
+            row, width=22, height=22, corner_radius=11, fg_color=cat.color,
         )
-        color_indicator.pack(side="left", padx=(12, 12), pady=16)
+        color_indicator.pack(side="left", padx=(14, 12), pady=18)
 
         info_frame = ctk.CTkFrame(row, fg_color="transparent")
-        info_frame.pack(side="left", fill="both", expand=True, pady=8)
+        info_frame.pack(side="left", fill="both", expand=True, pady=10)
 
         ctk.CTkLabel(
             info_frame, text=cat.name,
-            font=ctk.CTkFont(size=14, weight="bold"),
+            font=ui_font(13, "bold"),
             text_color=colors["text_primary"], anchor="w",
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             info_frame, text=cat.display_type,
-            font=ctk.CTkFont(size=12),
+            font=ui_font(12),
             text_color=colors["text_secondary"], anchor="w",
         ).pack(anchor="w")
 
         in_use = self.db.category_in_use(cat.id) if cat.id else False
-        delete_tooltip = " (in use)" if in_use else ""
 
-        ctk.CTkButton(
-            row, text="✎", width=32, height=32,
-            fg_color="transparent", hover_color=colors["sidebar_hover"],
-            text_color=colors["text_secondary"],
-            command=lambda c=cat: self._open_edit_dialog(c),
-        ).pack(side="right", padx=2)
+        if in_use:
+            ctk.CTkButton(
+                row, text="In use", width=68, height=28,
+                corner_radius=6, font=ui_font(12),
+                fg_color="transparent",
+                text_color=colors["text_muted"],
+                text_color_disabled=colors["text_muted"],
+                state="disabled",
+            ).pack(side="right", padx=(0, 10))
+        else:
+            row_action_button(
+                row, self.theme, "Delete",
+                lambda c=cat: self._confirm_delete(c), danger=True,
+            ).pack(side="right", padx=(0, 10))
 
-        delete_btn = ctk.CTkButton(
-            row, text=f"✕{delete_tooltip}", width=32 if not in_use else 80, height=32,
-            fg_color="transparent",
-            hover_color=colors["danger"] if not in_use else colors["sidebar_hover"],
-            text_color=colors["text_muted"] if in_use else colors["text_secondary"],
-            state="disabled" if in_use else "normal",
-            command=lambda c=cat: self._confirm_delete(c),
-        )
-        delete_btn.pack(side="right", padx=2)
+        row_action_button(
+            row, self.theme, "Edit",
+            lambda c=cat: self._open_edit_dialog(c),
+        ).pack(side="right", padx=(0, 2))
 
-        separator = ctk.CTkFrame(row, height=1, fg_color=colors["border"])
+        separator = ctk.CTkFrame(row, height=1, fg_color=colors["hairline"])
         separator.place(relx=0, rely=1, relwidth=1)
 
         return row
@@ -327,5 +343,9 @@ class CategoriesView(ctk.CTkFrame):
             show_error(self.root, self.theme, str(exc))
 
     def on_theme_change(self) -> None:
-        """Refreshes the view on theme change."""
+        """Rebuilds the view when the theme changes."""
+        for child in self.winfo_children():
+            child.destroy()
+        self._rows.clear()
+        self._build_ui(self.theme.colors)
         self.refresh()

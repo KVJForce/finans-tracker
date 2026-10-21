@@ -17,18 +17,18 @@ from finans_tracker.models import (
 )
 
 DEFAULT_CATEGORIES: list[tuple[str, str, str]] = [
-    ("Salary", "#2ecc71", "income"),
-    ("Freelance", "#27ae60", "income"),
-    ("Investments", "#1abc9c", "income"),
-    ("Other income", "#16a085", "income"),
-    ("Food & drink", "#e74c3c", "expense"),
-    ("Housing", "#c0392b", "expense"),
-    ("Transport", "#e67e22", "expense"),
-    ("Entertainment", "#9b59b6", "expense"),
-    ("Shopping", "#3498db", "expense"),
-    ("Health", "#1abc9c", "expense"),
-    ("Education", "#2980b9", "expense"),
-    ("Other", "#95a5a6", "both"),
+    ("Salary", "#1F7A4D", "income"),
+    ("Freelance", "#2F8B69", "income"),
+    ("Investments", "#35766E", "income"),
+    ("Other income", "#587F5A", "income"),
+    ("Food & drink", "#B4543C", "expense"),
+    ("Housing", "#46587A", "expense"),
+    ("Transport", "#A87C2E", "expense"),
+    ("Entertainment", "#7A5C8E", "expense"),
+    ("Shopping", "#3E7F8C", "expense"),
+    ("Health", "#7C9440", "expense"),
+    ("Education", "#5A6FA8", "expense"),
+    ("Other", "#9A9A94", "both"),
 ]
 
 # Legacy Swedish names are renamed on startup so existing databases keep working.
@@ -42,6 +42,23 @@ LEGACY_CATEGORY_NAMES: dict[str, str] = {
     "Hälsa": "Health",
     "Utbildning": "Education",
     "Övrigt": "Other",
+}
+
+# Legacy default colors are replaced with the paper palette on startup.
+# Only rows that still use an original default color are touched.
+LEGACY_CATEGORY_COLORS: dict[str, tuple[str, str]] = {
+    "Salary": ("#2ecc71", "#1F7A4D"),
+    "Freelance": ("#27ae60", "#2F8B69"),
+    "Investments": ("#1abc9c", "#35766E"),
+    "Other income": ("#16a085", "#587F5A"),
+    "Food & drink": ("#e74c3c", "#B4543C"),
+    "Housing": ("#c0392b", "#46587A"),
+    "Transport": ("#e67e22", "#A87C2E"),
+    "Entertainment": ("#9b59b6", "#7A5C8E"),
+    "Shopping": ("#3498db", "#3E7F8C"),
+    "Health": ("#1abc9c", "#7C9440"),
+    "Education": ("#2980b9", "#5A6FA8"),
+    "Other": ("#95a5a6", "#9A9A94"),
 }
 
 
@@ -86,7 +103,7 @@ class Database:
                 CREATE TABLE IF NOT EXISTS categories (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL UNIQUE,
-                    color TEXT NOT NULL DEFAULT '#3498db',
+                    color TEXT NOT NULL DEFAULT '#9A9A94',
                     category_type TEXT NOT NULL DEFAULT 'expense',
                     created_at TEXT NOT NULL DEFAULT (datetime('now'))
                 );
@@ -126,6 +143,7 @@ class Database:
                     )
 
             self._migrate_category_names(conn)
+            self._migrate_category_colors(conn)
 
     @staticmethod
     def _migrate_category_names(conn: sqlite3.Connection) -> None:
@@ -139,6 +157,15 @@ class Database:
                 )
                 existing.discard(old_name)
                 existing.add(new_name)
+
+    @staticmethod
+    def _migrate_category_colors(conn: sqlite3.Connection) -> None:
+        """Replaces legacy default colors with the current paper palette."""
+        for name, (old_color, new_color) in LEGACY_CATEGORY_COLORS.items():
+            conn.execute(
+                "UPDATE categories SET color = ? WHERE name = ? AND color = ?",
+                (new_color, name, old_color),
+            )
 
     # --- Categories ---
 

@@ -13,7 +13,7 @@ from finans_tracker import __version__
 from finans_tracker.backup import BackupManager
 from finans_tracker.database import Database
 from finans_tracker.export import ExportError, export_transactions_to_csv
-from finans_tracker.theme import ThemeManager, ThemeMode
+from finans_tracker.theme import ThemeManager, ThemeMode, ui_font
 from finans_tracker.ui.categories import CategoriesView
 from finans_tracker.ui.components import SidebarButton, show_error, show_info
 from finans_tracker.ui.dashboard import DashboardView
@@ -38,12 +38,13 @@ class FinansTrackerApp(ctk.CTk):
         self.backup_manager = BackupManager(db_path)
 
         self.theme_manager = ThemeManager(on_change=self._on_theme_change)
-        saved_theme = self.db.get_setting("theme_mode", "dark")
+        saved_theme = self.db.get_setting("theme_mode", "light")
         self.theme_manager.load_from_setting(saved_theme)
 
         self._current_view: str = "dashboard"
         self._sidebar_buttons: dict[str, SidebarButton] = {}
         self._views: dict[str, ctk.CTkFrame] = {}
+        self._theme_rebuild_id: Optional[str] = None
 
         self._setup_window()
         self._build_ui()
@@ -65,57 +66,64 @@ class FinansTrackerApp(ctk.CTk):
         """Builds the entire interface."""
         colors = self.theme_manager.colors
 
-        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(2, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
         self._build_sidebar(colors)
+
+        self._separator = ctk.CTkFrame(
+            self, width=1, corner_radius=0, fg_color=colors["hairline"],
+        )
+        self._separator.grid(row=0, column=1, sticky="ns")
+
         self._build_content_area(colors)
 
     def _build_sidebar(self, colors: dict[str, str]) -> None:
         """Builds the sidebar with navigation."""
+        self._sidebar_buttons = {}
+
         sidebar = ctk.CTkFrame(
-            self, width=220, corner_radius=0,
+            self, width=228, corner_radius=0,
             fg_color=colors["bg_secondary"],
         )
         sidebar.grid(row=0, column=0, sticky="nsew")
         sidebar.grid_propagate(False)
+        self._sidebar = sidebar
 
         logo_frame = ctk.CTkFrame(sidebar, fg_color="transparent")
-        logo_frame.pack(fill="x", padx=16, pady=(24, 32))
-
-        ctk.CTkLabel(
-            logo_frame, text="💰",
-            font=ctk.CTkFont(size=32),
-        ).pack(anchor="w")
+        logo_frame.pack(fill="x", padx=20, pady=(24, 0))
 
         ctk.CTkLabel(
             logo_frame, text=self.APP_NAME,
-            font=ctk.CTkFont(size=20, weight="bold"),
+            font=ui_font(17, "bold"),
             text_color=colors["text_primary"],
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             logo_frame, text="Personal finance",
-            font=ctk.CTkFont(size=12),
-            text_color=colors["text_secondary"],
-        ).pack(anchor="w")
+            font=ui_font(11),
+            text_color=colors["text_muted"],
+        ).pack(anchor="w", pady=(1, 0))
+
+        divider = ctk.CTkFrame(sidebar, height=1, fg_color=colors["hairline"])
+        divider.pack(fill="x", padx=20, pady=(16, 14))
 
         nav_items = [
-            ("dashboard", "Dashboard", "📊"),
-            ("transactions", "Transactions", "💳"),
-            ("categories", "Categories", "🏷"),
+            ("dashboard", "Dashboard"),
+            ("transactions", "Transactions"),
+            ("categories", "Categories"),
         ]
 
         nav_frame = ctk.CTkFrame(sidebar, fg_color="transparent")
         nav_frame.pack(fill="x", padx=12)
 
-        for view_id, label, icon in nav_items:
+        for view_id, label in nav_items:
             btn = SidebarButton(
-                nav_frame, self.theme_manager, label, icon,
+                nav_frame, self.theme_manager, label,
                 command=lambda v=view_id: self._show_view(v),
-                is_active=view_id == "dashboard",
+                is_active=view_id == self._current_view,
             )
-            btn.pack(fill="x", pady=2)
+            btn.pack(fill="x", pady=1)
             self._sidebar_buttons[view_id] = btn
 
         spacer = ctk.CTkFrame(sidebar, fg_color="transparent")
@@ -125,34 +133,41 @@ class FinansTrackerApp(ctk.CTk):
         tools_frame.pack(fill="x", padx=12, pady=(0, 8))
 
         ctk.CTkButton(
-            tools_frame, text="📤  Export CSV", height=36,
+            tools_frame, text="Export CSV", height=34,
             anchor="w", fg_color="transparent",
+            font=ui_font(12),
             hover_color=colors["sidebar_hover"],
             text_color=colors["text_secondary"],
             command=self._export_csv,
-        ).pack(fill="x", pady=2)
+        ).pack(fill="x", pady=1)
 
         ctk.CTkButton(
-            tools_frame, text="💾  Create backup", height=36,
+            tools_frame, text="Create backup", height=34,
             anchor="w", fg_color="transparent",
+            font=ui_font(12),
             hover_color=colors["sidebar_hover"],
             text_color=colors["text_secondary"],
             command=self._manual_backup,
-        ).pack(fill="x", pady=2)
+        ).pack(fill="x", pady=1)
 
         self._theme_btn = ctk.CTkButton(
             tools_frame,
-            text="🌙  Dark theme" if self.theme_manager.mode == ThemeMode.DARK else "☀  Light theme",
-            height=36, anchor="w", fg_color="transparent",
+            text=(
+                "Switch to dark"
+                if self.theme_manager.mode == ThemeMode.LIGHT
+                else "Switch to light"
+            ),
+            height=34, anchor="w", fg_color="transparent",
+            font=ui_font(12),
             hover_color=colors["sidebar_hover"],
             text_color=colors["text_secondary"],
             command=self._toggle_theme,
         )
-        self._theme_btn.pack(fill="x", pady=2)
+        self._theme_btn.pack(fill="x", pady=1)
 
         version_label = ctk.CTkLabel(
             sidebar, text=f"v{__version__}",
-            font=ctk.CTkFont(size=11),
+            font=ui_font(11),
             text_color=colors["text_muted"],
         )
         version_label.pack(pady=(0, 16))
@@ -160,7 +175,7 @@ class FinansTrackerApp(ctk.CTk):
     def _build_content_area(self, colors: dict[str, str]) -> None:
         """Builds the content area with all views."""
         self._content = ctk.CTkFrame(self, fg_color=colors["bg_primary"], corner_radius=0)
-        self._content.grid(row=0, column=1, sticky="nsew")
+        self._content.grid(row=0, column=2, sticky="nsew")
         self._content.grid_columnconfigure(0, weight=1)
         self._content.grid_rowconfigure(0, weight=1)
 
@@ -193,17 +208,32 @@ class FinansTrackerApp(ctk.CTk):
         """Toggles between light and dark theme."""
         new_mode = self.theme_manager.toggle()
         self.db.set_setting("theme_mode", new_mode.value)
-        label = "🌙  Dark theme" if new_mode == ThemeMode.DARK else "☀  Light theme"
-        self._theme_btn.configure(text=label)
 
     def _on_theme_change(self, mode: ThemeMode) -> None:
-        """Updates the UI when the theme changes."""
+        """Schedules a rebuild of the UI when the theme changes."""
         if not hasattr(self, "_content"):
             return
 
+        # On Windows, CustomTkinter's titlebar redraw re-focuses the previously
+        # focused widget 1 ms after the mode switch. Rebuild a moment later so
+        # that focus callback always lands on a widget that still exists.
+        if self._theme_rebuild_id is not None:
+            try:
+                self.after_cancel(self._theme_rebuild_id)
+            except Exception:
+                pass
+        self._theme_rebuild_id = self.after(25, self._rebuild_for_theme)
+
+    def _rebuild_for_theme(self) -> None:
+        """Rebuilds all themed surfaces after a theme change."""
+        self._theme_rebuild_id = None
         colors = self.theme_manager.colors
         self.configure(fg_color=colors["bg_primary"])
         self._content.configure(fg_color=colors["bg_primary"])
+        self._separator.configure(fg_color=colors["hairline"])
+
+        self._sidebar.destroy()
+        self._build_sidebar(colors)
 
         for view in self._views.values():
             if hasattr(view, "on_theme_change"):

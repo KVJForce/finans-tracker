@@ -4,13 +4,21 @@ A modern desktop application for personal finance management, built in Python wi
 
 ## Features
 
-- **Dashboard** – Total balance, monthly income/expenses, and a pie chart by category
+- **Dashboard** – Total balance, monthly income/expenses, and a donut chart by category
 - **Transactions** – Add, edit, and delete income/expenses with filtering
 - **Import** – Load bank CSV files with preview, automatic categorization, and duplicate protection
 - **Categories** – Custom categories with color coding
 - **Storage** – SQLite database with automatic daily backups
 - **Export** – Export transactions to CSV
 - **Themes** – Switch between dark and light mode
+
+## Screenshots
+
+| Light | Dark |
+|-------|------|
+| ![Dashboard](docs/dashboard-light.png) | ![Dashboard in dark mode](docs/dashboard-dark.png) |
+
+![Transactions](docs/transactions-light.png)
 
 ## Requirements
 
@@ -104,7 +112,9 @@ A backup runs at startup (once per day) and on exit.
 
 Databases created before the English translation used Swedish default
 category names. On first start they are renamed to English automatically;
-your transactions stay linked to the same categories.
+your transactions stay linked to the same categories. Colors that still
+match an original default are refreshed to the current palette at the same
+time — custom colors and renames are left untouched.
 
 ## Project structure
 

@@ -6,7 +6,7 @@ from typing import Callable, Optional
 
 import customtkinter as ctk
 
-from finans_tracker.theme import ThemeManager
+from finans_tracker.theme import ThemeManager, ui_font
 
 
 def format_currency(amount: float) -> str:
@@ -27,6 +27,148 @@ def format_currency(amount: float) -> str:
     return f"{sign}{formatted},{decimal_part:02d} kr"
 
 
+def primary_button(
+    master: ctk.CTkBaseClass,
+    theme: ThemeManager,
+    text: str,
+    command: Optional[Callable[[], None]] = None,
+    **kwargs,
+) -> ctk.CTkButton:
+    """Creates an ink-filled primary button."""
+    colors = theme.colors
+    options = dict(
+        text=text,
+        command=command,
+        height=36,
+        corner_radius=8,
+        font=ui_font(13),
+        fg_color=colors["accent"],
+        hover_color=colors["accent_hover"],
+        text_color=colors["accent_text"],
+    )
+    options.update(kwargs)
+    return ctk.CTkButton(master, **options)
+
+
+def ghost_button(
+    master: ctk.CTkBaseClass,
+    theme: ThemeManager,
+    text: str,
+    command: Optional[Callable[[], None]] = None,
+    **kwargs,
+) -> ctk.CTkButton:
+    """Creates a quiet outline button."""
+    colors = theme.colors
+    options = dict(
+        text=text,
+        command=command,
+        height=36,
+        corner_radius=8,
+        font=ui_font(13),
+        fg_color="transparent",
+        hover_color=colors["hover"],
+        text_color=colors["text_primary"],
+        border_width=1,
+        border_color=colors["border"],
+    )
+    options.update(kwargs)
+    return ctk.CTkButton(master, **options)
+
+
+def danger_button(
+    master: ctk.CTkBaseClass,
+    theme: ThemeManager,
+    text: str,
+    command: Optional[Callable[[], None]] = None,
+    **kwargs,
+) -> ctk.CTkButton:
+    """Creates a muted red button for destructive actions."""
+    colors = theme.colors
+    options = dict(
+        text=text,
+        command=command,
+        height=36,
+        corner_radius=8,
+        font=ui_font(13),
+        fg_color=colors["danger"],
+        hover_color=colors["danger_hover"],
+        text_color=colors["accent_text"],
+    )
+    options.update(kwargs)
+    return ctk.CTkButton(master, **options)
+
+
+def row_action_button(
+    master: ctk.CTkBaseClass,
+    theme: ThemeManager,
+    text: str,
+    command: Callable[[], None],
+    danger: bool = False,
+) -> ctk.CTkButton:
+    """Creates a small text-only button for list rows."""
+    colors = theme.colors
+    return ctk.CTkButton(
+        master,
+        text=text,
+        command=command,
+        width=58 if len(text) < 6 else 68,
+        height=28,
+        corner_radius=6,
+        font=ui_font(12),
+        fg_color="transparent",
+        hover_color=colors["hover"],
+        text_color=colors["danger"] if danger else colors["text_secondary"],
+    )
+
+
+def paper_entry(
+    master: ctk.CTkBaseClass,
+    theme: ThemeManager,
+    **kwargs,
+) -> ctk.CTkEntry:
+    """Creates an entry styled as a soft paper field."""
+    colors = theme.colors
+    options = dict(
+        height=34,
+        corner_radius=8,
+        font=ui_font(13),
+        fg_color=colors["field"],
+        border_width=0,
+        text_color=colors["text_primary"],
+        placeholder_text_color=colors["text_muted"],
+    )
+    options.update(kwargs)
+    return ctk.CTkEntry(master, **options)
+
+
+def paper_menu(
+    master: ctk.CTkBaseClass,
+    theme: ThemeManager,
+    values: Optional[list[str]] = None,
+    variable: Optional[ctk.StringVar] = None,
+    **kwargs,
+) -> ctk.CTkOptionMenu:
+    """Creates a dropdown styled as a soft paper field."""
+    colors = theme.colors
+    options = dict(
+        values=values or [],
+        variable=variable,
+        height=34,
+        corner_radius=8,
+        font=ui_font(13),
+        fg_color=colors["field"],
+        button_color=colors["field"],
+        button_hover_color=colors["hover"],
+        text_color=colors["text_primary"],
+        dropdown_fg_color=colors["bg_card"],
+        dropdown_hover_color=colors["hover"],
+        dropdown_text_color=colors["text_primary"],
+        dropdown_font=ui_font(13),
+    )
+    options.update(kwargs)
+    return ctk.CTkOptionMenu(master, **options)
+
+
 class StatCard(ctk.CTkFrame):
     """Card that shows a key metric with a label."""
 
@@ -43,7 +185,7 @@ class StatCard(ctk.CTkFrame):
         super().__init__(
             master,
             fg_color=colors["bg_card"],
-            corner_radius=12,
+            corner_radius=10,
             border_width=1,
             border_color=colors["border"],
             **kwargs,
@@ -52,19 +194,19 @@ class StatCard(ctk.CTkFrame):
 
         title_label = ctk.CTkLabel(
             self,
-            text=title,
-            font=ctk.CTkFont(size=13),
+            text=title.upper(),
+            font=ui_font(11, "bold"),
             text_color=colors["text_secondary"],
         )
-        title_label.pack(anchor="w", padx=20, pady=(16, 4))
+        title_label.pack(anchor="w", padx=20, pady=(18, 6))
 
         self._value_label = ctk.CTkLabel(
             self,
             text=value,
-            font=ctk.CTkFont(size=28, weight="bold"),
+            font=ui_font(26, "bold"),
             text_color=value_color or colors["text_primary"],
         )
-        self._value_label.pack(anchor="w", padx=20, pady=(0, 16))
+        self._value_label.pack(anchor="w", padx=20, pady=(0, 18))
 
     def set_value(self, value: str, color: Optional[str] = None) -> None:
         """Updates the displayed value."""
@@ -81,7 +223,6 @@ class SidebarButton(ctk.CTkButton):
         master: ctk.CTkBaseClass,
         theme: ThemeManager,
         text: str,
-        icon: str,
         command: Callable[[], None],
         is_active: bool = False,
         **kwargs,
@@ -89,15 +230,15 @@ class SidebarButton(ctk.CTkButton):
         colors = theme.colors
         super().__init__(
             master,
-            text=f"  {icon}  {text}",
+            text=text,
             command=command,
             anchor="w",
-            height=44,
+            height=38,
             corner_radius=8,
-            font=ctk.CTkFont(size=14),
+            font=ui_font(13, "bold" if is_active else "normal"),
             fg_color=colors["sidebar_active"] if is_active else "transparent",
             hover_color=colors["sidebar_hover"],
-            text_color=colors["text_primary"],
+            text_color=colors["text_primary"] if is_active else colors["text_secondary"],
             **kwargs,
         )
         self._theme = theme
@@ -108,7 +249,9 @@ class SidebarButton(ctk.CTkButton):
         self._is_active = active
         colors = self._theme.colors
         self.configure(
-            fg_color=colors["sidebar_active"] if active else "transparent"
+            fg_color=colors["sidebar_active"] if active else "transparent",
+            text_color=colors["text_primary"] if active else colors["text_secondary"],
+            font=ui_font(13, "bold" if active else "normal"),
         )
 
 
@@ -126,40 +269,33 @@ class MessageDialog(ctk.CTkToplevel):
         super().__init__(master)
         colors = theme.colors
         self.title(title)
-        self.geometry("420x180")
+        self.geometry("440x220")
         self.resizable(False, False)
         self.transient(master)
         self.grab_set()
+        self.configure(fg_color=colors["bg_card"])
 
-        icon = "⚠" if is_error else "ℹ"
-        icon_color = colors["danger"] if is_error else colors["accent"]
-
-        icon_label = ctk.CTkLabel(
+        header = ctk.CTkLabel(
             self,
-            text=icon,
-            font=ctk.CTkFont(size=32),
-            text_color=icon_color,
+            text=title,
+            font=ui_font(15, "bold"),
+            text_color=colors["danger"] if is_error else colors["text_primary"],
         )
-        icon_label.pack(pady=(24, 8))
+        header.pack(anchor="w", padx=26, pady=(24, 6))
 
         msg_label = ctk.CTkLabel(
             self,
             text=message,
-            font=ctk.CTkFont(size=14),
-            text_color=colors["text_primary"],
-            wraplength=360,
+            font=ui_font(13),
+            text_color=colors["text_secondary"],
+            wraplength=380,
+            justify="left",
+            anchor="w",
         )
-        msg_label.pack(padx=24, pady=(0, 16))
+        msg_label.pack(anchor="w", padx=26, pady=(0, 20))
 
-        ok_btn = ctk.CTkButton(
-            self,
-            text="OK",
-            width=100,
-            command=self.destroy,
-            fg_color=colors["accent"],
-            hover_color=colors["accent_hover"],
-        )
-        ok_btn.pack(pady=(0, 20))
+        ok_btn = primary_button(self, theme, "OK", self.destroy, width=96)
+        ok_btn.pack(anchor="e", padx=26, pady=(0, 24))
 
         self.update_idletasks()
         x = master.winfo_x() + (master.winfo_width() - self.winfo_width()) // 2
@@ -181,46 +317,40 @@ class ConfirmDialog(ctk.CTkToplevel):
         super().__init__(master)
         colors = theme.colors
         self.title(title)
-        self.geometry("420x200")
+        self.geometry("440x240")
         self.resizable(False, False)
         self.transient(master)
         self.grab_set()
+        self.configure(fg_color=colors["bg_card"])
         self._on_confirm = on_confirm
+
+        header = ctk.CTkLabel(
+            self,
+            text=title,
+            font=ui_font(15, "bold"),
+            text_color=colors["text_primary"],
+        )
+        header.pack(anchor="w", padx=26, pady=(24, 6))
 
         msg_label = ctk.CTkLabel(
             self,
             text=message,
-            font=ctk.CTkFont(size=14),
-            text_color=colors["text_primary"],
-            wraplength=360,
+            font=ui_font(13),
+            text_color=colors["text_secondary"],
+            wraplength=380,
+            justify="left",
+            anchor="w",
         )
-        msg_label.pack(padx=24, pady=(32, 24))
+        msg_label.pack(anchor="w", padx=26, pady=(0, 18))
 
         btn_frame = ctk.CTkFrame(self, fg_color="transparent")
-        btn_frame.pack(pady=(0, 24))
+        btn_frame.pack(fill="x", padx=26, pady=(0, 24))
 
-        cancel_btn = ctk.CTkButton(
-            btn_frame,
-            text="Cancel",
-            width=100,
-            fg_color="transparent",
-            border_width=1,
-            border_color=colors["border"],
-            text_color=colors["text_primary"],
-            hover_color=colors["sidebar_hover"],
-            command=self.destroy,
-        )
-        cancel_btn.pack(side="left", padx=8)
+        cancel_btn = ghost_button(btn_frame, theme, "Cancel", self.destroy, width=100)
+        cancel_btn.pack(side="right", padx=(8, 0))
 
-        confirm_btn = ctk.CTkButton(
-            btn_frame,
-            text="Confirm",
-            width=100,
-            fg_color=colors["danger"],
-            hover_color=colors["accent_hover"],
-            command=self._confirm,
-        )
-        confirm_btn.pack(side="left", padx=8)
+        confirm_btn = danger_button(btn_frame, theme, "Delete", self._confirm, width=100)
+        confirm_btn.pack(side="right")
 
         self.update_idletasks()
         x = master.winfo_x() + (master.winfo_width() - self.winfo_width()) // 2
