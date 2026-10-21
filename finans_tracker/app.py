@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from datetime import datetime
 from pathlib import Path
 from tkinter import filedialog
@@ -61,6 +62,17 @@ class FinansTrackerApp(ctk.CTk):
 
         colors = self.theme_manager.colors
         self.configure(fg_color=colors["bg_primary"])
+        self._set_window_icon()
+
+    def _set_window_icon(self) -> None:
+        """Sets the window icon when the icon file is available."""
+        base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
+        icon_path = base / "assets" / "finans_tracker.ico"
+        if icon_path.exists():
+            try:
+                self.iconbitmap(str(icon_path))
+            except Exception:
+                pass
 
     def _build_ui(self) -> None:
         """Builds the entire interface."""

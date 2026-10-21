@@ -2,6 +2,16 @@
 
 A modern desktop application for personal finance management, built in Python with CustomTkinter.
 
+## Download (Windows)
+
+Download `FinanceTracker.exe` from the
+[Releases page](https://github.com/KVJForce/finans-tracker/releases) and run it
+— no Python installation is needed. Your data is stored in
+`~/.finans_tracker/` on first start.
+
+The file is not code-signed, so Windows SmartScreen may warn about it the
+first time: click **More info** → **Run anyway**.
+
 ## Features
 
 - **Dashboard** – Total balance, monthly income/expenses, and a donut chart by category
@@ -56,6 +66,19 @@ pip install -r requirements.txt
 ```bash
 python main.py
 ```
+
+## Building the Windows executable
+
+The repository includes a PyInstaller spec file that bundles the app into a
+single `FinanceTracker.exe`:
+
+```bash
+pip install pyinstaller
+pyinstaller FinanceTracker.spec
+```
+
+The executable is written to `dist/FinanceTracker.exe`. The `build/` and
+`dist/` folders are not committed; releases carry the built binary.
 
 ## Importing bank CSV files
 
@@ -121,9 +144,11 @@ time — custom colors and renames are left untouched.
 ```
 finans-tracker/
 ├── main.py                  # Entry point
+├── FinanceTracker.spec      # PyInstaller build config
 ├── requirements.txt
 ├── requirements-dev.txt
 ├── README.md
+├── assets/                  # App icon
 ├── samples/                 # Example bank CSV files
 ├── tests/                   # Tests for the import logic
 └── finans_tracker/
